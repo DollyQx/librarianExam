@@ -18,11 +18,15 @@ class StudyMaterial extends Model
         'file_size',
         'downloads_count',
         'is_active',
+        'is_paid',
+        'price',
         'sort_order',
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
+        'is_paid' => 'boolean',
+        'price' => 'float',
     ];
 
     public function subject()

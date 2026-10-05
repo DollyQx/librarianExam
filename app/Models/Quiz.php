@@ -21,6 +21,8 @@ class Quiz extends Model
         'marks_per_question',
         'negative_marking_per_question',
         'is_active',
+        'is_paid',
+        'price',
         'sort_order',
     ];
 
@@ -41,6 +43,8 @@ class Quiz extends Model
 
     protected $casts = [
         'is_active' => 'boolean',
+        'is_paid' => 'boolean',
+        'price' => 'float',
         'pass_percentage' => 'float',
         'marks_per_question' => 'float',
         'negative_marking_per_question' => 'float',

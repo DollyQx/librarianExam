@@ -184,10 +184,15 @@
     <div class="top-notice-bar text-center">
         <div class="container d-flex justify-content-between align-items-center">
             <div class="mx-auto">
-                <i class="fas fa-unlock me-2 text-warning"></i> <strong>Public-First Access:</strong> Learn, Download PDFs & Take Mock Tests Freely Without Login!
+                <i class="fas fa-bullhorn me-2 text-warning"></i> <strong>बिहार LET एवं Bihar Librarian परीक्षा विशेष Portal:</strong> संचालक - Sumit Verma (Choice Study Junction)
             </div>
             <div class="d-none d-md-block">
-                <i class="fas fa-shield-alt me-1"></i> 100% Free Forever
+                <a href="{{ config('branding.social.telegram') }}" target="_blank" class="text-white text-decoration-none me-3">
+                    <i class="fab fa-telegram me-1"></i> Telegram Group
+                </a>
+                <a href="{{ config('branding.social.youtube') }}" target="_blank" class="text-white text-decoration-none">
+                    <i class="fab fa-youtube me-1"></i> Choice Study Junction
+                </a>
             </div>
         </div>
     </div>
@@ -200,8 +205,8 @@
                     <i class="{{ config('branding.logo_icon', 'fas fa-book-reader') }}"></i>
                 </div>
                 <div>
-                    <span>{{ config('branding.name', 'Librarian Exam Prep') }}</span>
-                    <small class="d-block text-muted" style="font-size: 0.65rem; font-weight: 500; line-height: 1;">{{ config('branding.tagline', 'FREE EXAM PORTAL') }}</small>
+                    <span>{{ config('branding.name', 'BIHAR LET/Librarian Exam') }}</span>
+                    <small class="d-block text-primary" style="font-size: 0.7rem; font-weight: 600; line-height: 1;">{{ config('branding.tagline', 'Bihar LET & Librarian Exam Prep') }}</small>
                 </div>
             </a>
 
@@ -212,19 +217,22 @@
             <div class="collapse navbar-collapse" id="navbarMain">
                 <ul class="navbar-nav mx-auto mb-2 mb-lg-0">
                     <li class="nav-item">
-                        <a class="nav-link {{ request()->is('/') ? 'active' : '' }}" href="{{ url('/') }}">Home</a>
+                        <a class="nav-link {{ request()->is('/') ? 'active' : '' }}" href="{{ url('/') }}">होम</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link {{ request()->is('subjects*') ? 'active' : '' }}" href="{{ url('/subjects') }}">Subjects</a>
+                        <a class="nav-link {{ request()->is('tests*') && request()->get('category') == 'bihar-let' ? 'active' : '' }}" href="{{ url('/tests?category=bihar-let') }}">Bihar LET</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link {{ request()->is('tests*') ? 'active' : '' }}" href="{{ url('/tests') }}">Tests</a>
+                        <a class="nav-link {{ request()->is('tests*') && request()->get('category') == 'bihar-librarian' ? 'active' : '' }}" href="{{ url('/tests?category=bihar-librarian') }}">Bihar Librarian</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link {{ request()->is('materials*') ? 'active' : '' }}" href="{{ url('/materials') }}">Study Material</a>
+                        <a class="nav-link {{ request()->is('tests*') && !request()->get('category') ? 'active' : '' }}" href="{{ url('/tests') }}">क्विज़</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link {{ request()->is('videos*') ? 'active' : '' }}" href="{{ url('/videos') }}">Videos</a>
+                        <a class="nav-link {{ request()->is('materials*') ? 'active' : '' }}" href="{{ url('/materials') }}">PDF नोट्स</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {{ request()->is('videos*') ? 'active' : '' }}" href="{{ url('/videos') }}">वीडियो</a>
                     </li>
 
                     @auth
@@ -294,24 +302,28 @@
                         <div class="brand-icon bg-primary text-white" style="width: 36px; height: 36px;">
                             <i class="{{ config('branding.logo_icon', 'fas fa-book-reader') }}"></i>
                         </div>
-                        <h4 class="text-white mb-0">{{ config('branding.name', 'Librarian Exam Prep') }}</h4>
+                        <h5 class="text-white mb-0">{{ config('branding.name', 'BIHAR LET/Librarian Exam') }}</h5>
                     </div>
-                    <p class="text-muted small">
-                        India's premier 100% free Public-First Librarian Examination Learning Portal. Access PDFs, video lectures, and timed mock tests without registration barrier.
+                    <p class="text-muted small mb-2">
+                        {{ config('branding.tagline') }}
+                    </p>
+                    <p class="text-light small fw-semibold">
+                        <i class="fas fa-user-shield me-1 text-warning"></i> संचालक: {{ config('branding.owner', 'Sumit Verma') }}
                     </p>
                 </div>
                 <div class="col-6 col-lg-2">
-                    <h5>Quick Links</h5>
+                    <h5 class="fs-6">नेविगेशन</h5>
                     <ul class="list-unstyled d-flex flex-column gap-2 small">
-                        <li><a href="{{ url('/') }}">Home</a></li>
-                        <li><a href="{{ url('/subjects') }}">Subjects</a></li>
-                        <li><a href="{{ url('/tests') }}">Mock Tests</a></li>
-                        <li><a href="{{ url('/materials') }}">Study Materials</a></li>
-                        <li><a href="{{ url('/videos') }}">Video Lectures</a></li>
+                        <li><a href="{{ url('/') }}">होम</a></li>
+                        <li><a href="{{ url('/tests?category=bihar-let') }}">Bihar LET</a></li>
+                        <li><a href="{{ url('/tests?category=bihar-librarian') }}">Bihar Librarian</a></li>
+                        <li><a href="{{ url('/tests') }}">क्विज़ (Mock Tests)</a></li>
+                        <li><a href="{{ url('/materials') }}">PDF नोट्स</a></li>
+                        <li><a href="{{ url('/videos') }}">वीडियो लेक्चर्स</a></li>
                     </ul>
                 </div>
                 <div class="col-6 col-lg-2">
-                    <h5>Info & Legal</h5>
+                    <h5 class="fs-6">सूचना एवं नियम</h5>
                     <ul class="list-unstyled d-flex flex-column gap-2 small">
                         <li><a href="{{ url('/about') }}">About Us</a></li>
                         <li><a href="{{ url('/contact') }}">Contact Us</a></li>
@@ -320,21 +332,21 @@
                     </ul>
                 </div>
                 <div class="col-lg-4">
-                    <h5>Public-First Learning</h5>
-                    <p class="small text-muted mb-3">
-                        No mandatory signups or subscriptions. Practice mock tests freely and create an account only when you wish to track historical progress.
-                    </p>
-                    <div class="d-flex gap-3 small">
-                        <a href="{{ url('/privacy-policy') }}">Privacy Policy</a>
-                        <span>|</span>
-                        <a href="{{ url('/terms') }}">Terms & Conditions</a>
+                    <h5 class="fs-6">सोशल मीडिया एवं कम्युनिटी</h5>
+                    <div class="d-flex flex-column gap-2 mb-3">
+                        <a href="{{ config('branding.social.telegram') }}" target="_blank" class="btn btn-outline-info btn-sm text-start text-white border-secondary">
+                            <i class="fab fa-telegram me-2 text-info fs-5"></i> Telegram Group (SssVvv8271)
+                        </a>
+                        <a href="{{ config('branding.social.youtube') }}" target="_blank" class="btn btn-outline-danger btn-sm text-start text-white border-secondary">
+                            <i class="fab fa-youtube me-2 text-danger fs-5"></i> Choice Study Junction (YouTube)
+                        </a>
                     </div>
                 </div>
             </div>
         </div>
         <div class="footer-bottom text-center text-muted">
             <div class="container">
-                <p class="mb-0">© {{ date('Y') }} {{ config('branding.name', 'Librarian Exam Prep') }}. All Rights Reserved. Built for Students.</p>
+                <p class="mb-0">© {{ date('Y') }} {{ config('branding.name', 'BIHAR LET/Librarian Exam') }}. सर्वाधिकार सुरक्षित | संचालक: Sumit Verma</p>
             </div>
         </div>
     </footer>

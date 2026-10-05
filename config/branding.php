@@ -11,37 +11,37 @@ return [
     |
     */
 
-    'name' => env('APP_NAME', 'Librarian Exam Prep'),
-    'tagline' => '100% Free Public Librarian Exam Portal',
-    'short_name' => 'Librarian Prep',
+    'name' => env('APP_NAME', 'BIHAR LET/Librarian Exam'),
+    'owner' => 'Sumit Verma',
+    'tagline' => 'बिहार LET और Bihar Librarian परीक्षा की तैयारी के लिए Quiz, PDF Notes और Video Lectures.',
+    'short_name' => 'Bihar LET & Librarian',
     
     // Identity & Imagery
     'logo_icon' => 'fas fa-book-reader',
     'favicon' => '/favicon.ico',
-    'primary_color' => '#2563eb',
+    'primary_color' => '#1d4ed8',
     'secondary_color' => '#0f172a',
     'accent_color' => '#f59e0b',
     
     // Contact Information
-    'contact_email' => env('BRAND_CONTACT_EMAIL', 'support@librarianexamprep.com'),
-    'contact_phone' => env('BRAND_CONTACT_PHONE', '+91 98765 43210'),
-    'address' => 'New Delhi, India',
+    'contact_email' => env('BRAND_CONTACT_EMAIL', 'support@studyly.online'),
+    'contact_phone' => env('BRAND_CONTACT_PHONE', '+91 8271000000'),
+    'address' => 'Bihar, India',
 
     // Social Media Links
     'social' => [
-        'youtube' => env('SOCIAL_YOUTUBE', 'https://youtube.com/@librarianexamprep'),
-        'telegram' => env('SOCIAL_TELEGRAM', 'https://t.me/librarianexamprep'),
-        'whatsapp' => env('SOCIAL_WHATSAPP', 'https://wa.me/919876543210'),
-        'twitter' => env('SOCIAL_TWITTER', 'https://twitter.com/librarianprep'),
-        'facebook' => env('SOCIAL_FACEBOOK', 'https://facebook.com/librarianprep'),
+        'youtube' => env('SOCIAL_YOUTUBE', 'https://youtube.com/@choicestudyjunction8380'),
+        'telegram' => env('SOCIAL_TELEGRAM', 'https://t.me/SssVvv8271'),
+        'whatsapp' => env('SOCIAL_WHATSAPP', 'https://t.me/SssVvv8271'),
     ],
 
     // Global Default SEO Settings
     'seo' => [
-        'title' => 'Librarian Exam Prep | Free Mock Tests, Study Materials & PDFs',
-        'description' => 'Prepare for KVS, NVS, EMRS, UGC-NET, and State Librarian competitive examinations with free mock tests, PDF notes, video lectures, and topic-wise practice quizzes.',
-        'keywords' => 'Librarian Exam, KVS Librarian, NVS Librarian, UGC NET Library Science, Library Science Mock Tests, Free PDF Notes',
-        'author' => 'Librarian Exam Prep Team',
+        'title' => 'BIHAR LET/Librarian Exam | बिहार LET और Librarian परीक्षा तैयारी Portal',
+        'description' => 'बिहार LET (Library Eligibility Test) और Bihar Librarian प्रतियोगी परीक्षा की तैयारी के लिए नि:शुल्क और सशुल्क क्विज़, PDF नोट्स एवं वीडियो लेक्चर्स।',
+        'keywords' => 'Bihar LET, Bihar Librarian Exam, Bihar Librarian Quiz, Bihar LET Syllabus, Bihar Library Science Notes, Sumit Verma, Choice Study Junction',
+        'author' => 'Sumit Verma (Choice Study Junction)',
         'og_image' => '/images/og-banner.png',
     ],
 ];
+
