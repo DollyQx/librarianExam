@@ -21,7 +21,23 @@ class Quiz extends Model
         'marks_per_question',
         'negative_marking_per_question',
         'is_active',
+        'sort_order',
     ];
+
+    public function hasValidQuestions(): bool
+    {
+        if ($this->questions()->count() === 0) {
+            return false;
+        }
+
+        foreach ($this->questions as $question) {
+            if ($question->options()->where('is_correct', true)->count() === 0) {
+                return false;
+            }
+        }
+
+        return true;
+    }
 
     protected $casts = [
         'is_active' => 'boolean',

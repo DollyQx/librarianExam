@@ -18,6 +18,7 @@ class Video extends Model
         'youtube_id',
         'thumbnail_url',
         'is_active',
+        'sort_order',
     ];
 
     protected $casts = [
@@ -36,7 +37,12 @@ class Video extends Model
 
     public static function parseYoutubeId(string $url): ?string
     {
-        preg_match('%(?:youtube(?:-nocookie)?\.com/(?:[^/]+/.+/|(?:v|e(?:mbed)?)/|.*[?&]v=)|youtu\.be/)([^"&?/ ]{11})%i', $url, $match);
+        $url = trim($url);
+        if (preg_match('/^[a-zA-Z0-9_-]{11}$/', $url)) {
+            return $url;
+        }
+
+        preg_match('%(?:youtube(?:-nocookie)?\.com/(?:[^/]+/.+/|(?:v|e(?:mbed)?|shorts)/|.*[?&]v=)|youtu\.be/)([^"&?/ ]{11})%i', $url, $match);
         return $match[1] ?? null;
     }
 }

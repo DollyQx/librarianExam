@@ -16,6 +16,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class StudentController extends Controller
 {
@@ -43,9 +44,22 @@ class StudentController extends Controller
     public function subjects()
     {
         $subjects = Subject::where('is_active', true)
-            ->with(['topics' => function ($q) {
-                $q->where('is_active', true);
-            }])
+            ->orderBy('sort_order', 'asc')
+            ->orderBy('id', 'desc')
+            ->with([
+                'topics' => function ($q) {
+                    $q->where('is_active', true)->orderBy('sort_order', 'asc');
+                },
+                'studyMaterials' => function ($q) {
+                    $q->where('is_active', true)->orderBy('sort_order', 'asc')->take(5);
+                },
+                'videos' => function ($q) {
+                    $q->where('is_active', true)->orderBy('sort_order', 'asc')->take(5);
+                },
+                'quizzes' => function ($q) {
+                    $q->where('is_active', true)->orderBy('sort_order', 'asc')->withCount('questions');
+                }
+            ])
             ->get();
 
         return view('student.subjects', compact('subjects'));
@@ -57,8 +71,8 @@ class StudentController extends Controller
         if ($request->filled('subject_id')) {
             $query->where('subject_id', $request->subject_id);
         }
-        $materials = $query->latest()->paginate(12);
-        $subjects = Subject::where('is_active', true)->get();
+        $materials = $query->orderBy('sort_order', 'asc')->orderBy('id', 'desc')->paginate(12);
+        $subjects = Subject::where('is_active', true)->orderBy('sort_order', 'asc')->get();
 
         return view('student.materials', compact('materials', 'subjects'));
     }
@@ -83,18 +97,24 @@ class StudentController extends Controller
         if ($request->filled('subject_id')) {
             $query->where('subject_id', $request->subject_id);
         }
-        $videos = $query->latest()->paginate(12);
-        $subjects = Subject::where('is_active', true)->get();
+        $videos = $query->orderBy('sort_order', 'asc')->orderBy('id', 'desc')->paginate(12);
+        $subjects = Subject::where('is_active', true)->orderBy('sort_order', 'asc')->get();
 
         return view('student.videos', compact('videos', 'subjects'));
     }
 
-    public function tests()
+    public function tests(Request $request)
     {
-        $quizzes = Quiz::where('is_active', true)
+        $query = Quiz::where('is_active', true)
             ->with(['subject', 'topic'])
-            ->withCount('questions')
-            ->latest()
+            ->withCount('questions');
+
+        if ($request->filled('type') && in_array($request->type, ['mock', 'subject', 'topic'])) {
+            $query->where('type', $request->type);
+        }
+
+        $quizzes = $query->orderBy('sort_order', 'asc')
+            ->orderBy('id', 'desc')
             ->paginate(12);
 
         return view('student.tests', compact('quizzes'));
@@ -103,7 +123,7 @@ class StudentController extends Controller
     public function showTest(Quiz $quiz)
     {
         if (!$quiz->is_active) {
-            return redirect()->route('student.tests')->with('error', 'This test series is currently unavailable.');
+            return redirect()->route('tests')->with('error', 'This test series is currently unavailable.');
         }
 
         // Security: Exclude 'is_correct' column from options payload to prevent client-side inspect element cheating
@@ -114,7 +134,7 @@ class StudentController extends Controller
         }]);
 
         if ($quiz->questions->isEmpty()) {
-            return redirect()->route('student.tests')->with('error', 'No questions found in this test series yet.');
+            return redirect()->route('tests')->with('error', 'No questions found in this test series yet.');
         }
 
         return view('student.test_engine', compact('quiz'));
@@ -123,7 +143,7 @@ class StudentController extends Controller
     public function submitTest(Request $request, Quiz $quiz)
     {
         if (!$quiz->is_active) {
-            return redirect()->route('student.tests')->with('error', 'This test is no longer active.');
+            return redirect()->route('tests')->with('error', 'This test is no longer active.');
         }
 
         $request->validate([
@@ -132,7 +152,7 @@ class StudentController extends Controller
         ]);
 
         $quiz->load(['questions.options']);
-        $user = Auth::user();
+        $userId = Auth::check() ? Auth::id() : null;
         $userAnswers = $request->input('answers', []);
         $timeTaken = (int) $request->input('time_taken_seconds', 0);
 
@@ -143,9 +163,9 @@ class StudentController extends Controller
         $unattemptedQuestions = 0;
         $rawScore = 0.0;
 
-        // Create Attempt record
+        // Create Attempt record (user_id is null for Guest attempts)
         $attempt = QuizAttempt::create([
-            'user_id' => $user->id,
+            'user_id' => $userId,
             'quiz_id' => $quiz->id,
             'total_questions' => $totalQuestions,
             'status' => 'in_progress',
@@ -156,7 +176,6 @@ class StudentController extends Controller
             $selectedOptionId = $userAnswers[$question->id] ?? null;
 
             if ($selectedOptionId) {
-                // Ensure option belongs to this question
                 $selectedOption = $question->options->where('id', $selectedOptionId)->first();
 
                 if ($selectedOption) {
@@ -203,7 +222,7 @@ class StudentController extends Controller
         }
 
         $maxMarks = (float) ($totalQuestions * $quiz->marks_per_question);
-        $finalScore = max(0.0, round($rawScore, 2)); // Display score floor at 0
+        $finalScore = max(0.0, round($rawScore, 2));
         $percentage = ($maxMarks > 0) ? min(100.0, max(0.0, ($finalScore / $maxMarks) * 100)) : 0.0;
 
         $attempt->update([
@@ -220,15 +239,22 @@ class StudentController extends Controller
             'time_taken_seconds' => $timeTaken,
         ]);
 
-        return redirect()->route('student.tests.result', [$quiz->id, $attempt->id])
+        return redirect()->route('tests.result', [$quiz->id, $attempt->id])
             ->with('success', 'Test submitted successfully! Here is your scorecard.');
     }
 
     public function result(Quiz $quiz, QuizAttempt $attempt)
     {
-        // Security check: ensure attempt belongs to logged in user and matches quiz
-        if ($attempt->user_id !== Auth::id() || $attempt->quiz_id !== $quiz->id) {
-            abort(403, 'Unauthorized access to test result.');
+        // Security check: If attempt belongs to a registered student, verify ownership.
+        // If attempt belongs to a Guest (user_id === null), allow instant public viewing!
+        if ($attempt->user_id !== null) {
+            if (!Auth::check() || $attempt->user_id !== Auth::id()) {
+                abort(403, 'Unauthorized access to test result.');
+            }
+        }
+
+        if ($attempt->quiz_id !== $quiz->id) {
+            abort(404, 'Test result not found for this quiz.');
         }
 
         $attempt->load(['quiz', 'answers.question.options', 'answers.selectedOption']);

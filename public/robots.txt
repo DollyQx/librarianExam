@@ -1,2 +1,18 @@
 User-agent: *
-Disallow:
+Allow: /
+Allow: /subjects
+Allow: /materials
+Allow: /videos
+Allow: /tests
+Allow: /about
+Allow: /contact
+Allow: /privacy-policy
+Allow: /terms
+
+Disallow: /admin/
+Disallow: /dashboard
+Disallow: /student/
+Disallow: /login
+Disallow: /register
+
+Sitemap: {{ url('/sitemap.xml') }}

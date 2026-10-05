@@ -3,8 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>@yield('title', config('app.name', 'Librarian Exam Prep') . ' | 100% Free Mock Tests & Study Material')</title>
-    <meta name="description" content="Prepare for Librarian, KVS, NVS, EMRS, UGC-NET, and State Librarian competitive examinations with free mock tests, PDFs, video lectures, and practice quizzes.">
+    
+    <!-- SEO Title & Meta Tags -->
+    <title>@yield('title', config('branding.seo.title', config('app.name', 'Librarian Exam Prep')))</title>
+    <meta name="description" content="@yield('meta_description', config('branding.seo.description'))">
+    <meta name="keywords" content="@yield('meta_keywords', config('branding.seo.keywords'))">
+    <meta name="author" content="{{ config('branding.seo.author') }}">
+    <link rel="canonical" href="{{ url()->current() }}">
+
+    <!-- Open Graph / Social Media Sharing -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="{{ url()->current() }}">
+    <meta property="og:title" content="@yield('title', config('branding.seo.title'))">
+    <meta property="og:description" content="@yield('meta_description', config('branding.seo.description'))">
+    <meta property="og:image" content="{{ asset(config('branding.seo.og_image')) }}">
+
+    @yield('robots')
     
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -15,10 +29,10 @@
 
     <style>
         :root {
-            --primary-color: #2563eb;
+            --primary-color: {{ config('branding.primary_color', '#2563eb') }};
             --primary-hover: #1d4ed8;
-            --secondary-color: #0f172a;
-            --accent-color: #f59e0b;
+            --secondary-color: {{ config('branding.secondary_color', '#0f172a') }};
+            --accent-color: {{ config('branding.accent_color', '#f59e0b') }};
             --accent-success: #10b981;
             --bg-light: #f8fafc;
             --card-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
@@ -42,7 +56,7 @@
 
         /* Navbar Styling */
         .top-notice-bar {
-            background: linear-gradient(90deg, #1e3a8a, #3b82f6);
+            background: linear-gradient(90deg, #1e3a8a, var(--primary-color));
             color: white;
             font-size: 0.875rem;
             padding: 6px 0;
@@ -69,7 +83,7 @@
         }
 
         .brand-icon {
-            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+            background: linear-gradient(135deg, var(--primary-color), #1d4ed8);
             color: white;
             width: 40px;
             height: 40px;
@@ -84,7 +98,7 @@
         .nav-link {
             font-weight: 600;
             color: #475569 !important;
-            padding: 8px 16px !important;
+            padding: 8px 14px !important;
             border-radius: 8px;
             transition: all 0.2s ease;
         }
@@ -95,11 +109,11 @@
         }
 
         .btn-brand-primary {
-            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+            background: linear-gradient(135deg, var(--primary-color), #1d4ed8);
             color: white;
             border: none;
             font-weight: 600;
-            padding: 10px 24px;
+            padding: 8px 20px;
             border-radius: 10px;
             box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
             transition: all 0.25s ease;
@@ -116,7 +130,7 @@
             border: 2px solid #cbd5e1;
             color: #334155;
             font-weight: 600;
-            padding: 8px 20px;
+            padding: 8px 18px;
             border-radius: 10px;
             transition: all 0.2s ease;
         }
@@ -129,7 +143,7 @@
 
         /* Footer */
         footer {
-            background-color: #0f172a;
+            background-color: var(--secondary-color);
             color: #94a3b8;
             margin-top: auto;
         }
@@ -156,7 +170,6 @@
             font-size: 0.875rem;
         }
 
-        /* Global Toast & Alerts */
         .alert-custom {
             border-radius: 12px;
             border: none;
@@ -171,10 +184,10 @@
     <div class="top-notice-bar text-center">
         <div class="container d-flex justify-content-between align-items-center">
             <div class="mx-auto">
-                <i class="fas fa-gift me-2 text-warning"></i> <strong>100% Free Platform</strong> for All Librarian Aspirants across India!
+                <i class="fas fa-unlock me-2 text-warning"></i> <strong>Public-First Access:</strong> Learn, Download PDFs & Take Mock Tests Freely Without Login!
             </div>
             <div class="d-none d-md-block">
-                <i class="fas fa-shield-alt me-1"></i> No Paid Subscriptions
+                <i class="fas fa-shield-alt me-1"></i> 100% Free Forever
             </div>
         </div>
     </div>
@@ -184,11 +197,11 @@
         <div class="container">
             <a class="navbar-brand" href="{{ url('/') }}">
                 <div class="brand-icon">
-                    <i class="fas fa-book-reader"></i>
+                    <i class="{{ config('branding.logo_icon', 'fas fa-book-reader') }}"></i>
                 </div>
                 <div>
-                    <span>{{ config('app.name', 'Librarian Exam Prep') }}</span>
-                    <small class="d-block text-muted" style="font-size: 0.65rem; font-weight: 500; line-height: 1;">FREE EXAM PORTAL</small>
+                    <span>{{ config('branding.name', 'Librarian Exam Prep') }}</span>
+                    <small class="d-block text-muted" style="font-size: 0.65rem; font-weight: 500; line-height: 1;">{{ config('branding.tagline', 'FREE EXAM PORTAL') }}</small>
                 </div>
             </a>
 
@@ -205,14 +218,28 @@
                         <a class="nav-link {{ request()->is('subjects*') ? 'active' : '' }}" href="{{ url('/subjects') }}">Subjects</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link {{ request()->is('tests*') ? 'active' : '' }}" href="{{ url('/tests') }}">Mock Tests</a>
+                        <a class="nav-link {{ request()->is('tests*') ? 'active' : '' }}" href="{{ url('/tests') }}">Tests</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link {{ request()->is('about') ? 'active' : '' }}" href="{{ url('/about') }}">About Us</a>
+                        <a class="nav-link {{ request()->is('materials*') ? 'active' : '' }}" href="{{ url('/materials') }}">Study Material</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link {{ request()->is('contact') ? 'active' : '' }}" href="{{ url('/contact') }}">Contact</a>
+                        <a class="nav-link {{ request()->is('videos*') ? 'active' : '' }}" href="{{ url('/videos') }}">Videos</a>
                     </li>
+
+                    @auth
+                        @if(Auth::user()->isStudent())
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->is('dashboard') ? 'active' : '' }}" href="{{ route('student.dashboard') }}">Dashboard</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->is('student/doubts*') ? 'active' : '' }}" href="{{ route('student.doubts') }}">Doubts</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->is('student/profile*') ? 'active' : '' }}" href="{{ route('student.profile') }}">Profile</a>
+                            </li>
+                        @endif
+                    @endauth
                 </ul>
 
                 <div class="d-flex align-items-center gap-2">
@@ -220,10 +247,6 @@
                         @if(Auth::user()->isAdmin())
                             <a href="{{ route('admin.dashboard') }}" class="btn btn-primary btn-sm fw-bold px-3">
                                 <i class="fas fa-tachometer-alt me-1"></i> Admin Panel
-                            </a>
-                        @else
-                            <a href="{{ route('student.dashboard') }}" class="btn btn-primary btn-sm fw-bold px-3">
-                                <i class="fas fa-user-graduate me-1"></i> Dashboard
                             </a>
                         @endif
                         <form method="POST" action="{{ route('logout') }}" class="d-inline">
@@ -234,7 +257,7 @@
                         </form>
                     @else
                         <a href="{{ route('login') }}" class="btn btn-brand-outline btn-sm">Login</a>
-                        <a href="{{ route('register') }}" class="btn btn-brand-primary btn-sm">Start Free</a>
+                        <a href="{{ route('register') }}" class="btn btn-brand-primary btn-sm">Register</a>
                     @endauth
                 </div>
             </div>
@@ -269,12 +292,12 @@
                 <div class="col-lg-4">
                     <div class="d-flex align-items-center gap-2 mb-3">
                         <div class="brand-icon bg-primary text-white" style="width: 36px; height: 36px;">
-                            <i class="fas fa-book-reader"></i>
+                            <i class="{{ config('branding.logo_icon', 'fas fa-book-reader') }}"></i>
                         </div>
-                        <h4 class="text-white mb-0">{{ config('app.name', 'Librarian Exam Prep') }}</h4>
+                        <h4 class="text-white mb-0">{{ config('branding.name', 'Librarian Exam Prep') }}</h4>
                     </div>
                     <p class="text-muted small">
-                        India's premier 100% free Librarian Examination Learning & Practice Portal. Empowering candidates preparing for KVS, NVS, EMRS, UGC-NET, and State Librarian jobs.
+                        India's premier 100% free Public-First Librarian Examination Learning Portal. Access PDFs, video lectures, and timed mock tests without registration barrier.
                     </p>
                 </div>
                 <div class="col-6 col-lg-2">
@@ -283,23 +306,23 @@
                         <li><a href="{{ url('/') }}">Home</a></li>
                         <li><a href="{{ url('/subjects') }}">Subjects</a></li>
                         <li><a href="{{ url('/tests') }}">Mock Tests</a></li>
-                        <li><a href="{{ url('/about') }}">About Us</a></li>
-                        <li><a href="{{ url('/contact') }}">Contact Us</a></li>
+                        <li><a href="{{ url('/materials') }}">Study Materials</a></li>
+                        <li><a href="{{ url('/videos') }}">Video Lectures</a></li>
                     </ul>
                 </div>
                 <div class="col-6 col-lg-2">
-                    <h5>Subjects</h5>
+                    <h5>Info & Legal</h5>
                     <ul class="list-unstyled d-flex flex-column gap-2 small">
-                        <li><a href="{{ url('/subjects') }}">Library Classification</a></li>
-                        <li><a href="{{ url('/subjects') }}">Cataloguing (AACR2/CCC)</a></li>
-                        <li><a href="{{ url('/subjects') }}">Library Automation</a></li>
-                        <li><a href="{{ url('/subjects') }}">Information Sources</a></li>
+                        <li><a href="{{ url('/about') }}">About Us</a></li>
+                        <li><a href="{{ url('/contact') }}">Contact Us</a></li>
+                        <li><a href="{{ url('/privacy-policy') }}">Privacy Policy</a></li>
+                        <li><a href="{{ url('/terms') }}">Terms & Conditions</a></li>
                     </ul>
                 </div>
                 <div class="col-lg-4">
-                    <h5>AdSense & Legal Compliance</h5>
+                    <h5>Public-First Learning</h5>
                     <p class="small text-muted mb-3">
-                        All study content provided on this portal is strictly educational, free of cost, and compliant with educational standards.
+                        No mandatory signups or subscriptions. Practice mock tests freely and create an account only when you wish to track historical progress.
                     </p>
                     <div class="d-flex gap-3 small">
                         <a href="{{ url('/privacy-policy') }}">Privacy Policy</a>
@@ -311,7 +334,7 @@
         </div>
         <div class="footer-bottom text-center text-muted">
             <div class="container">
-                <p class="mb-0">© {{ date('Y') }} {{ config('app.name', 'Librarian Exam Prep') }}. All Rights Reserved. Built for Students.</p>
+                <p class="mb-0">© {{ date('Y') }} {{ config('branding.name', 'Librarian Exam Prep') }}. All Rights Reserved. Built for Students.</p>
             </div>
         </div>
     </footer>

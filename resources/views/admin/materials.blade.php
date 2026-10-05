@@ -12,11 +12,11 @@
             <form method="POST" action="{{ route('admin.materials.store') }}" enctype="multipart/form-data">
                 @csrf
                 <div class="mb-3">
-                    <label class="form-label fw-bold">Title</label>
+                    <label class="form-label fw-bold small">Title</label>
                     <input type="text" name="title" class="form-control" placeholder="e.g. AACR-2 Complete Rules PDF" required>
                 </div>
                 <div class="mb-3">
-                    <label class="form-label fw-bold">Subject</label>
+                    <label class="form-label fw-bold small">Subject</label>
                     <select name="subject_id" class="form-select" required>
                         <option value="">-- Choose Subject --</option>
                         @foreach($subjects as $subject)
@@ -25,16 +25,20 @@
                     </select>
                 </div>
                 <div class="mb-3">
-                    <label class="form-label fw-bold">Description</label>
+                    <label class="form-label fw-bold small">Sort Order</label>
+                    <input type="number" name="sort_order" class="form-control" value="0">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold small">Description</label>
                     <textarea name="description" rows="2" class="form-control" placeholder="Summary of notes..."></textarea>
                 </div>
                 <div class="mb-3">
-                    <label class="form-label fw-bold">Select PDF File <small class="text-muted">(Max 20MB)</small></label>
+                    <label class="form-label fw-bold small">Select PDF File <small class="text-muted">(Max 20MB)</small></label>
                     <input type="file" name="pdf_file" class="form-control" accept="application/pdf" required>
                 </div>
-                <div class="form-check mb-4">
-                    <input class="form-check-input" type="checkbox" name="is_active" value="1" id="is_active" checked>
-                    <label class="form-check-label fw-semibold" for="is_active">Publish PDF</label>
+                <div class="form-check form-switch mb-3">
+                    <input class="form-check-input" type="checkbox" name="is_active" id="is_active" value="1" checked>
+                    <label class="form-check-label fw-bold small" for="is_active">Publish PDF (Active)</label>
                 </div>
                 <button type="submit" class="btn btn-danger w-100 fw-bold">
                     <i class="fas fa-cloud-upload-alt me-2"></i> Upload PDF
@@ -51,34 +55,91 @@
                 <table class="table table-hover align-middle">
                     <thead class="table-light">
                         <tr>
+                            <th>Order</th>
                             <th>PDF Title</th>
                             <th>Subject</th>
-                            <th>Size</th>
+                            <th>Status</th>
                             <th>Downloads</th>
-                            <th>Action</th>
+                            <th class="text-end">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         @forelse($materials as $pdf)
                             <tr>
+                                <td><span class="badge bg-light text-dark border">{{ $pdf->sort_order }}</span></td>
                                 <td>
                                     <div class="fw-bold text-dark">{{ $pdf->title }}</div>
                                     <small class="text-muted">{{ Str::limit($pdf->description, 40) }}</small>
                                 </td>
                                 <td><span class="badge bg-light text-dark border">{{ $pdf->subject->name ?? 'General' }}</span></td>
-                                <td class="small">{{ $pdf->formatted_size }}</td>
-                                <td><span class="badge bg-info bg-opacity-10 text-info fw-bold">{{ $pdf->downloads_count }}</span></td>
                                 <td>
-                                    <a href="{{ Storage::url($pdf->file_path) }}" target="_blank" class="btn btn-sm btn-outline-primary me-1"><i class="fas fa-eye"></i></a>
+                                    <span class="badge {{ $pdf->is_active ? 'bg-success bg-opacity-10 text-success' : 'bg-secondary bg-opacity-10 text-secondary' }} fw-bold">
+                                        {{ $pdf->is_active ? 'Active' : 'Draft' }}
+                                    </span>
+                                </td>
+                                <td><span class="badge bg-info bg-opacity-10 text-info fw-bold">{{ $pdf->downloads_count }}</span></td>
+                                <td class="text-end">
+                                    <a href="{{ Storage::url($pdf->file_path) }}" target="_blank" class="btn btn-sm btn-outline-primary me-1" title="View PDF"><i class="fas fa-eye"></i></a>
+                                    <button class="btn btn-sm btn-outline-secondary me-1" data-bs-toggle="modal" data-bs-target="#editMaterialModal{{ $pdf->id }}" title="Edit PDF Info"><i class="fas fa-edit"></i></button>
                                     <form method="POST" action="{{ route('admin.materials.delete', $pdf->id) }}" onsubmit="return confirm('Delete this PDF file?');" class="d-inline">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button>
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete PDF"><i class="fas fa-trash"></i></button>
                                     </form>
                                 </td>
                             </tr>
+
+                            <!-- Edit Modal -->
+                            <div class="modal fade" id="editMaterialModal{{ $pdf->id }}" tabindex="-1">
+                                <div class="modal-dialog">
+                                    <div class="modal-content rounded-4 border-0">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title fw-bold">Edit PDF Material</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                        </div>
+                                        <form method="POST" action="{{ route('admin.materials.update', $pdf->id) }}" enctype="multipart/form-data">
+                                            @csrf
+                                            @method('PUT')
+                                            <div class="modal-body">
+                                                <div class="mb-3">
+                                                    <label class="form-label fw-bold small">Title</label>
+                                                    <input type="text" name="title" class="form-control" value="{{ $pdf->title }}" required>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label fw-bold small">Subject</label>
+                                                    <select name="subject_id" class="form-select" required>
+                                                        @foreach($subjects as $subj)
+                                                            <option value="{{ $subj->id }}" {{ $pdf->subject_id == $subj->id ? 'selected' : '' }}>{{ $subj->name }}</option>
+                                                        @endforeach
+                                                    </select>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label fw-bold small">Sort Order</label>
+                                                    <input type="number" name="sort_order" class="form-control" value="{{ $pdf->sort_order }}">
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label fw-bold small">Description</label>
+                                                    <textarea name="description" rows="2" class="form-control">{{ $pdf->description }}</textarea>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label fw-bold small">Replace PDF File <small class="text-muted">(Optional)</small></label>
+                                                    <input type="file" name="pdf_file" class="form-control" accept="application/pdf">
+                                                </div>
+                                                <div class="form-check form-switch mb-3">
+                                                    <input class="form-check-input" type="checkbox" name="is_active" id="edit_material_active{{ $pdf->id }}" value="1" {{ $pdf->is_active ? 'checked' : '' }}>
+                                                    <label class="form-check-label fw-bold small" for="edit_material_active{{ $pdf->id }}">Active (Published)</label>
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                                                <button type="submit" class="btn btn-primary fw-bold">Update Material</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
                         @empty
-                            <tr><td colspan="5" class="text-center text-muted py-4">No PDF materials uploaded yet.</td></tr>
+                            <tr><td colspan="6" class="text-center text-muted py-4">No PDF materials uploaded yet.</td></tr>
                         @endforelse
                     </tbody>
                 </table>

@@ -12,11 +12,11 @@
             <form method="POST" action="{{ route('admin.videos.store') }}">
                 @csrf
                 <div class="mb-3">
-                    <label class="form-label fw-bold">Video Title</label>
+                    <label class="form-label fw-bold small">Video Title</label>
                     <input type="text" name="title" class="form-control" placeholder="e.g. Colon Classification (CC) Masterclass" required>
                 </div>
                 <div class="mb-3">
-                    <label class="form-label fw-bold">Subject</label>
+                    <label class="form-label fw-bold small">Subject</label>
                     <select name="subject_id" class="form-select" required>
                         <option value="">-- Choose Subject --</option>
                         @foreach($subjects as $subject)
@@ -25,17 +25,25 @@
                     </select>
                 </div>
                 <div class="mb-3">
-                    <label class="form-label fw-bold">YouTube URL</label>
+                    <label class="form-label fw-bold small">YouTube URL</label>
                     <input type="url" name="youtube_url" class="form-control" placeholder="https://www.youtube.com/watch?v=..." required>
-                    <small class="text-muted">Paste full YouTube watch link or shorts/embed URL.</small>
+                    <small class="text-muted extra-small">Paste YouTube watch link or shorts/embed URL.</small>
                 </div>
                 <div class="mb-3">
-                    <label class="form-label fw-bold">Description</label>
+                    <label class="form-label fw-bold small">Custom Thumbnail URL <small class="text-muted">(Optional)</small></label>
+                    <input type="url" name="thumbnail_url" class="form-control" placeholder="https://... (defaults to YouTube HQ)">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold small">Sort Order</label>
+                    <input type="number" name="sort_order" class="form-control" value="0">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold small">Description</label>
                     <textarea name="description" rows="2" class="form-control" placeholder="Lecture overview..."></textarea>
                 </div>
-                <div class="form-check mb-4">
-                    <input class="form-check-input" type="checkbox" name="is_active" value="1" id="is_active" checked>
-                    <label class="form-check-label fw-semibold" for="is_active">Publish Video</label>
+                <div class="form-check form-switch mb-3">
+                    <input class="form-check-input" type="checkbox" name="is_active" id="is_active" value="1" checked>
+                    <label class="form-check-label fw-bold small" for="is_active">Publish Video (Active)</label>
                 </div>
                 <button type="submit" class="btn btn-danger w-100 fw-bold">
                     <i class="fab fa-youtube me-2"></i> Save Video
@@ -52,37 +60,92 @@
                 <table class="table table-hover align-middle">
                     <thead class="table-light">
                         <tr>
+                            <th>Order</th>
                             <th>Thumbnail</th>
                             <th>Title & Subject</th>
-                            <th>YouTube ID</th>
                             <th>Status</th>
-                            <th>Action</th>
+                            <th class="text-end">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         @forelse($videos as $video)
                             <tr>
-                                <td style="width: 100px;">
-                                    <img src="{{ $video->thumbnail_url }}" alt="Thumb" class="img-fluid rounded border">
+                                <td><span class="badge bg-light text-dark border">{{ $video->sort_order }}</span></td>
+                                <td style="width: 90px;">
+                                    <img src="{{ $video->thumbnail_url }}" alt="Thumb" class="img-fluid rounded border shadow-sm">
                                 </td>
                                 <td>
                                     <div class="fw-bold text-dark">{{ $video->title }}</div>
                                     <small class="text-muted d-block">{{ $video->subject->name ?? 'General' }}</small>
                                 </td>
-                                <td><code>{{ $video->youtube_id }}</code></td>
                                 <td>
-                                    <span class="badge {{ $video->is_active ? 'bg-success' : 'bg-secondary' }}">
-                                        {{ $video->is_active ? 'Active' : 'Inactive' }}
+                                    <span class="badge {{ $video->is_active ? 'bg-success bg-opacity-10 text-success' : 'bg-secondary bg-opacity-10 text-secondary' }} fw-bold">
+                                        {{ $video->is_active ? 'Active' : 'Draft' }}
                                     </span>
                                 </td>
-                                <td>
+                                <td class="text-end">
+                                    <button class="btn btn-sm btn-outline-primary me-1" data-bs-toggle="modal" data-bs-target="#editVideoModal{{ $video->id }}" title="Edit Video"><i class="fas fa-edit"></i></button>
                                     <form method="POST" action="{{ route('admin.videos.delete', $video->id) }}" onsubmit="return confirm('Delete video?');" class="d-inline">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button>
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete Video"><i class="fas fa-trash"></i></button>
                                     </form>
                                 </td>
                             </tr>
+
+                            <!-- Edit Modal -->
+                            <div class="modal fade" id="editVideoModal{{ $video->id }}" tabindex="-1">
+                                <div class="modal-dialog">
+                                    <div class="modal-content rounded-4 border-0">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title fw-bold">Edit Video Lecture</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                        </div>
+                                        <form method="POST" action="{{ route('admin.videos.update', $video->id) }}">
+                                            @csrf
+                                            @method('PUT')
+                                            <div class="modal-body">
+                                                <div class="mb-3">
+                                                    <label class="form-label fw-bold small">Video Title</label>
+                                                    <input type="text" name="title" class="form-control" value="{{ $video->title }}" required>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label fw-bold small">Subject</label>
+                                                    <select name="subject_id" class="form-select" required>
+                                                        @foreach($subjects as $subj)
+                                                            <option value="{{ $subj->id }}" {{ $video->subject_id == $subj->id ? 'selected' : '' }}>{{ $subj->name }}</option>
+                                                        @endforeach
+                                                    </select>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label fw-bold small">YouTube URL</label>
+                                                    <input type="url" name="youtube_url" class="form-control" value="{{ $video->youtube_url }}" required>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label fw-bold small">Custom Thumbnail URL</label>
+                                                    <input type="url" name="thumbnail_url" class="form-control" value="{{ $video->thumbnail_url }}">
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label fw-bold small">Sort Order</label>
+                                                    <input type="number" name="sort_order" class="form-control" value="{{ $video->sort_order }}">
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label fw-bold small">Description</label>
+                                                    <textarea name="description" rows="2" class="form-control">{{ $video->description }}</textarea>
+                                                </div>
+                                                <div class="form-check form-switch mb-3">
+                                                    <input class="form-check-input" type="checkbox" name="is_active" id="edit_video_active{{ $video->id }}" value="1" {{ $video->is_active ? 'checked' : '' }}>
+                                                    <label class="form-check-label fw-bold small" for="edit_video_active{{ $video->id }}">Active (Published)</label>
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                                                <button type="submit" class="btn btn-primary fw-bold">Update Video</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
                         @empty
                             <tr><td colspan="5" class="text-center text-muted py-4">No video lectures added yet.</td></tr>
                         @endforelse

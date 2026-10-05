@@ -15,6 +15,7 @@ class Topic extends Model
         'slug',
         'description',
         'is_active',
+        'sort_order',
     ];
 
     protected $casts = [

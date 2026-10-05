@@ -15,6 +15,7 @@ class Subject extends Model
         'description',
         'icon_class',
         'is_active',
+        'sort_order',
     ];
 
     protected $casts = [

@@ -4,6 +4,22 @@
 
 @section('content')
 <div class="container py-4">
+    <!-- Optional Guest Account Banner -->
+    @if(is_null($attempt->user_id) || !Auth::check())
+        <div class="alert alert-primary border-0 shadow-sm rounded-4 p-4 mb-4 bg-gradient text-dark">
+            <div class="d-flex flex-column flex-md-row align-items-center justify-content-between gap-3">
+                <div>
+                    <h5 class="fw-bold mb-1"><i class="fas fa-save text-warning me-2"></i> Want to Save Your Test Result & History?</h5>
+                    <p class="text-secondary small mb-0">You completed this test as a <strong>Guest</strong>. Create a 100% free account to permanently record your scores and track improvement!</p>
+                </div>
+                <div class="d-flex gap-2 shrink-0">
+                    <a href="{{ route('register') }}" class="btn btn-brand-primary btn-sm px-3">Create Free Account</a>
+                    <a href="{{ route('login') }}" class="btn btn-brand-outline btn-sm px-3">Log In</a>
+                </div>
+            </div>
+        </div>
+    @endif
+
     <!-- Scorecard Summary Banner -->
     <div class="card border-0 shadow-lg rounded-4 p-4 p-md-5 mb-5 bg-white text-center position-relative overflow-hidden">
         <div class="max-w-700 mx-auto">
@@ -64,12 +80,18 @@
             </div>
 
             <div class="d-flex justify-content-center gap-3">
-                <a href="{{ route('student.tests.show', $quiz->id) }}" class="btn btn-brand-primary">
+                <a href="{{ route('tests.show', $quiz->id) }}" class="btn btn-brand-primary">
                     <i class="fas fa-redo me-1"></i> Re-attempt Test
                 </a>
-                <a href="{{ route('student.dashboard') }}" class="btn btn-brand-outline">
-                    <i class="fas fa-home me-1"></i> Dashboard
-                </a>
+                @auth
+                    <a href="{{ route('student.dashboard') }}" class="btn btn-brand-outline">
+                        <i class="fas fa-home me-1"></i> Dashboard
+                    </a>
+                @else
+                    <a href="{{ route('tests') }}" class="btn btn-brand-outline">
+                        <i class="fas fa-list me-1"></i> More Tests
+                    </a>
+                @endauth
             </div>
         </div>
     </div>

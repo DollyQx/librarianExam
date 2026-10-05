@@ -18,6 +18,7 @@ class StudyMaterial extends Model
         'file_size',
         'downloads_count',
         'is_active',
+        'sort_order',
     ];
 
     protected $casts = [

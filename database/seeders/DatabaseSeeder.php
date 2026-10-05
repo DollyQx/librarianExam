@@ -168,59 +168,59 @@ class DatabaseSeeder extends Seeder
             'is_active' => true,
         ]);
 
-        // 5. Create Full Mock Test Series with 10 Real MCQs
+        // 5. Create Full Mock Test Series with 20 Real MCQs
         $mockQuiz = Quiz::create([
             'subject_id' => null, // Full Mock Test
             'title' => 'KVS / NVS Librarian Full Mock Test #1',
             'slug' => 'kvs-nvs-librarian-full-mock-test-1',
             'type' => 'mock',
-            'duration_minutes' => 20,
+            'duration_minutes' => 30,
             'pass_percentage' => 50,
             'marks_per_question' => 1.0,
             'negative_marking_per_question' => 0.25,
-            'description' => 'Complete full length practice paper for KVS & NVS Librarian posts covering classification, cataloguing, automation & information sources.',
+            'description' => 'Complete 20-question full length practice paper for KVS & NVS Librarian posts covering classification, cataloguing, automation & information sources.',
             'is_active' => true,
         ]);
 
         $mcqs = [
             [
-                'question' => 'Who is known as the Father of Library Science in India?',
+                'question' => '1. Who is known as the Father of Library Science in India?',
                 'explanation' => 'Dr. Shiyali Ramamrita Ranganathan (S.R. Ranganathan) is universally recognized as the Father of Library Science in India.',
                 'options' => ['Dr. S.R. Ranganathan', 'B.S. Kesavan', 'Melvil Dewey', 'C.A. Cutter'],
                 'correct' => 0
             ],
             [
-                'question' => 'The Five Laws of Library Science were first published in which year?',
+                'question' => '2. The Five Laws of Library Science were first published in which year?',
                 'explanation' => 'Dr. S.R. Ranganathan published the Five Laws of Library Science in 1931.',
                 'options' => ['1928', '1931', '1933', '1947'],
                 'correct' => 1
             ],
             [
-                'question' => 'Dewey Decimal Classification (DDC) was designed by Melvil Dewey in which year?',
+                'question' => '3. Dewey Decimal Classification (DDC) was designed by Melvil Dewey in which year?',
                 'explanation' => 'The 1st edition of DDC was published anonymously by Melvil Dewey in 1876.',
                 'options' => ['1876', '1895', '1905', '1933'],
                 'correct' => 0
             ],
             [
-                'question' => 'Which fundamental category is represented by ":" (colon) symbol in Colon Classification (CC 6th Edition)?',
+                'question' => '4. Which fundamental category is represented by ":" (colon) symbol in Colon Classification (CC 6th Edition)?',
                 'explanation' => 'In Colon Classification (CC 6th ed.), Energy (E) facet is preceded by the colon (:) indicator digit.',
                 'options' => ['Personality (P)', 'Matter (M)', 'Energy (E)', 'Space (S)'],
                 'correct' => 2
             ],
             [
-                'question' => 'AACR-2 was published in which year?',
+                'question' => '5. AACR-2 (Anglo-American Cataloguing Rules, Second Edition) was published in which year?',
                 'explanation' => 'Anglo-American Cataloguing Rules, Second Edition (AACR-2) was published in 1978.',
                 'options' => ['1967', '1978', '1988', '1998'],
                 'correct' => 1
             ],
             [
-                'question' => 'Koha is an open-source Integrated Library Management System originally developed in which country?',
-                'explanation' => 'Koha was initially created in 1999 by Katipo Communications for the Horowhenua Library Trust in New Zealand.',
+                'question' => '6. Koha is an open-source Integrated Library Management System originally developed in which country?',
+                'explanation' => 'Koha was created in 1999 by Katipo Communications for Horowhenua Library Trust in New Zealand.',
                 'options' => ['United States', 'United Kingdom', 'New Zealand', 'India'],
                 'correct' => 2
             ],
             [
-                'question' => 'What does MARC stand for in library cataloguing?',
+                'question' => '7. What does MARC stand for in library cataloguing?',
                 'explanation' => 'MARC stands for Machine-Readable Cataloging, created by Henriette Avram at the Library of Congress.',
                 'options' => [
                     'Machine-Readable Cataloging',
@@ -231,21 +231,86 @@ class DatabaseSeeder extends Seeder
                 'correct' => 0
             ],
             [
-                'question' => 'Which of the following is a Primary Source of Information?',
+                'question' => '8. Which of the following is considered a Primary Source of Information?',
                 'explanation' => 'Patents, research periodicals, dissertations, and conference proceedings are primary sources.',
                 'options' => ['Textbook', 'Patent', 'Encyclopedia', 'Abstracting Journal'],
                 'correct' => 1
             ],
             [
-                'question' => 'National Library of India is located in which city?',
+                'question' => '9. National Library of India is located in which city?',
                 'explanation' => 'The National Library of India is situated at Belvedere Estate in Kolkata, West Bengal.',
                 'options' => ['New Delhi', 'Kolkata', 'Chennai', 'Mumbai'],
                 'correct' => 1
             ],
             [
-                'question' => 'Delivery of Books and Newspapers Act in India was passed in which year?',
+                'question' => '10. Delivery of Books and Newspapers Act in India was passed in which year?',
                 'explanation' => 'The Delivery of Books Act was enacted in 1954 and amended in 1956 to include newspapers.',
                 'options' => ['1948', '1954', '1967', '1972'],
+                'correct' => 1
+            ],
+            [
+                'question' => '11. INFLIBNET Autonomous Inter-University Centre of UGC is located in which city?',
+                'explanation' => 'Information and Library Network (INFLIBNET) Centre is situated in Infocity, Gandhinagar, Gujarat.',
+                'options' => ['New Delhi', 'Bengaluru', 'Gandhinagar', 'Ahmedabad'],
+                'correct' => 2
+            ],
+            [
+                'question' => '12. International Standard Serial Number (ISSN) consists of how many digits?',
+                'explanation' => 'ISSN is an 8-digit code used to identify serial publications such as journals and magazines.',
+                'options' => ['8 Digits', '10 Digits', '13 Digits', '16 Digits'],
+                'correct' => 0
+            ],
+            [
+                'question' => '13. International Standard Book Number (ISBN) changed from 10 digits to 13 digits in which year?',
+                'explanation' => 'The International ISBN Agency officially transitioned from 10-digit to 13-digit ISBN format on 1 January 2007.',
+                'options' => ['2000', '2005', '2007', '2010'],
+                'correct' => 2
+            ],
+            [
+                'question' => '14. Which Law of Library Science strongly supports the Open Access System in libraries?',
+                'explanation' => 'The Third Law "Every Book its Reader" emphasizes open shelf access so readers can browse books directly.',
+                'options' => ['First Law', 'Second Law', 'Third Law', 'Fourth Law'],
+                'correct' => 2
+            ],
+            [
+                'question' => '15. What does RDA stand for in modern library cataloguing standards?',
+                'explanation' => 'RDA stands for Resource Description and Access, designed to replace AACR-2 for digital environment cataloguing.',
+                'options' => [
+                    'Resource Description and Access',
+                    'Rational Data Architecture',
+                    'Record Digital Automation',
+                    'Retrieval Data Alignment'
+                ],
+                'correct' => 0
+            ],
+            [
+                'question' => '16. Dublin Core Metadata element set consists of how many core elements?',
+                'explanation' => 'The basic Dublin Core Metadata Element Set consists of 15 standardized elements (Title, Creator, Subject, etc.).',
+                'options' => ['10 Elements', '12 Elements', '15 Elements', '20 Elements'],
+                'correct' => 2
+            ],
+            [
+                'question' => '17. DSpace open-source digital repository software was jointly developed by which institutions?',
+                'explanation' => 'DSpace was jointly developed by Massachusetts Institute of Technology (MIT) Libraries and Hewlett-Packard (HP) Labs.',
+                'options' => ['MIT & HP Labs', 'CERN & NASA', 'UNESCO & IFLA', 'Harvard & IBM'],
+                'correct' => 0
+            ],
+            [
+                'question' => '18. World Book and Copyright Day is celebrated globally on which date?',
+                'explanation' => 'UNESCO declared 23 April as World Book and Copyright Day to honor famous authors like William Shakespeare.',
+                'options' => ['8th September', '23rd April', '14th November', '12th August'],
+                'correct' => 1
+            ],
+            [
+                'question' => '19. Raja Rammohun Roy Library Foundation (RRRLF) was established by Government of India in which year?',
+                'explanation' => 'RRRLF was established in 1972 at Kolkata to support public library development in India.',
+                'options' => ['1962', '1972', '1982', '1992'],
+                'correct' => 1
+            ],
+            [
+                'question' => '20. Which classification scheme uses Pure Notation consisting exclusively of Arabic numerals?',
+                'explanation' => 'Dewey Decimal Classification (DDC) uses pure notation consisting solely of Indo-Arabic numerals (000-999).',
+                'options' => ['Colon Classification', 'Dewey Decimal Classification', 'Universal Decimal Classification', 'Library of Congress Classification'],
                 'correct' => 1
             ],
         ];
