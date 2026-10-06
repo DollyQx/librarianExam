@@ -1037,5 +1037,221 @@ class AdminController extends Controller
 
         return redirect()->route('admin.quizzes')->with('success', "Import Successful! Quizzes created/updated: {$quizzesCreated}, Questions imported: {$questionsImported}, Skipped duplicate rows: {$skippedRows}.");
     }
+
+    // Bulk PDF / Study Material Import Methods
+    public function importMaterialsForm()
+    {
+        $subjects = Subject::where('is_active', true)->with('topics')->get();
+        return view('admin.import_materials', compact('subjects'));
+    }
+
+    public function previewMaterialImport(Request $request)
+    {
+        $request->validate([
+            'subject_id' => 'required|exists:subjects,id',
+            'topic_id' => 'nullable|exists:topics,id',
+            'access_type' => 'required|in:free,membership',
+            'description' => 'nullable|string',
+            'pdf_files' => 'required|array|min:1',
+            'pdf_files.*' => 'file',
+        ]);
+
+        $subject = Subject::findOrFail($request->subject_id);
+        $topic = $request->topic_id ? Topic::find($request->topic_id) : null;
+        $accessType = $request->access_type;
+        $description = $request->description;
+
+        $filePayloads = [];
+        $validationErrors = [];
+        $validCount = 0;
+        $invalidCount = 0;
+
+        foreach ($request->file('pdf_files') as $file) {
+            $originalName = $file->getClientOriginalName();
+            $extension = strtolower($file->getClientOriginalExtension());
+            $fileSize = $file->getSize();
+            $mimeType = $file->getMimeType();
+
+            $rawName = pathinfo($originalName, PATHINFO_FILENAME);
+            $title = trim(ucwords(str_replace(['_', '-'], ' ', $rawName)));
+
+            $rowErrors = [];
+
+            // File size limit: 50MB (52,428,800 bytes)
+            if ($fileSize > 52428800) {
+                $rowErrors[] = 'File exceeds maximum size (50MB)';
+            }
+
+            // Extension and MIME verification
+            if ($extension !== 'pdf' || !in_array($mimeType, ['application/pdf', 'application/x-pdf', 'application/octet-stream'])) {
+                $rowErrors[] = 'Invalid PDF file';
+            }
+
+            // PDF Magic Header Check (%PDF-)
+            if (empty($rowErrors)) {
+                $header = file_get_contents($file->getRealPath(), false, null, 0, 5);
+                if (strpos($header, '%PDF') !== 0) {
+                    $rowErrors[] = 'Invalid PDF file';
+                }
+            }
+
+            // Duplicate title check
+            if (empty($rowErrors)) {
+                $existsInDb = StudyMaterial::where('title', $title)->exists();
+                if ($existsInDb) {
+                    $rowErrors[] = 'Duplicate material';
+                }
+            }
+
+            if (!empty($rowErrors)) {
+                $invalidCount++;
+                $errorStr = implode(' | ', $rowErrors);
+                $validationErrors[] = [
+                    'file_name' => $originalName,
+                    'error' => $errorStr,
+                ];
+                $filePayloads[] = [
+                    'id' => Str::uuid()->toString(),
+                    'original_name' => $originalName,
+                    'size_bytes' => $fileSize,
+                    'size_formatted' => $this->formatFileSize($fileSize),
+                    'title' => $title,
+                    'status' => 'invalid',
+                    'error' => $errorStr,
+                    'temp_path' => null,
+                ];
+            } else {
+                $validCount++;
+                $tempFilename = 'import_' . time() . '_' . Str::uuid() . '.pdf';
+                $tempPath = $file->storeAs('tmp_pdf_imports', $tempFilename, 'local');
+
+                $filePayloads[] = [
+                    'id' => Str::uuid()->toString(),
+                    'original_name' => $originalName,
+                    'size_bytes' => $fileSize,
+                    'size_formatted' => $this->formatFileSize($fileSize),
+                    'title' => $title,
+                    'status' => 'valid',
+                    'error' => null,
+                    'temp_path' => $tempPath,
+                ];
+            }
+        }
+
+        $subjects = Subject::where('is_active', true)->with('topics')->get();
+
+        return view('admin.import_materials', [
+            'previewMode' => true,
+            'subjects' => $subjects,
+            'selectedSubject' => $subject,
+            'selectedTopic' => $topic,
+            'accessType' => $accessType,
+            'description' => $description,
+            'filePayloads' => $filePayloads,
+            'validationErrors' => $validationErrors,
+            'totalFiles' => count($request->file('pdf_files')),
+            'validCount' => $validCount,
+            'invalidCount' => $invalidCount,
+        ]);
+    }
+
+    public function executeMaterialImport(Request $request)
+    {
+        $request->validate([
+            'subject_id' => 'required|exists:subjects,id',
+            'topic_id' => 'nullable|exists:topics,id',
+            'access_type' => 'required|in:free,membership',
+            'description' => 'nullable|string',
+            'items' => 'required|array|min:1',
+            'items.*.title' => 'required|string|max:255',
+            'items.*.temp_path' => 'required|string',
+            'items.*.size_bytes' => 'required|integer',
+        ]);
+
+        $subjectId = $request->subject_id;
+        $topicId = $request->topic_id;
+        $accessType = $request->access_type;
+        $isPaid = ($accessType === 'membership');
+        $description = $request->description;
+
+        $createdMaterials = 0;
+        $newlyStoredPublicPaths = [];
+        $tempPathsToDelete = [];
+
+        try {
+            DB::transaction(function() use ($request, $subjectId, $topicId, $accessType, $isPaid, $description, &$createdMaterials, &$newlyStoredPublicPaths, &$tempPathsToDelete) {
+                foreach ($request->items as $item) {
+                    $tempPath = $item['temp_path'];
+
+                    if (!Storage::disk('local')->exists($tempPath)) {
+                        throw new \Exception("Temporary import file not found.");
+                    }
+
+                    $tempPathsToDelete[] = $tempPath;
+
+                    $titleSlug = Str::slug($item['title']) ?: 'material';
+                    $safeFilename = time() . '_' . $titleSlug . '_' . Str::random(6) . '.pdf';
+                    $publicPath = 'study_materials/' . $safeFilename;
+
+                    $stream = Storage::disk('local')->readStream($tempPath);
+                    Storage::disk('public')->writeStream($publicPath, $stream);
+                    if (is_resource($stream)) {
+                        fclose($stream);
+                    }
+
+                    $newlyStoredPublicPaths[] = $publicPath;
+
+                    StudyMaterial::create([
+                        'subject_id' => $subjectId,
+                        'topic_id' => $topicId,
+                        'title' => $item['title'],
+                        'description' => $description,
+                        'file_path' => $publicPath,
+                        'file_size' => (int) $item['size_bytes'],
+                        'access_type' => $accessType,
+                        'is_paid' => $isPaid,
+                        'price' => 0.00,
+                        'is_active' => true,
+                        'sort_order' => 0,
+                    ]);
+
+                    $createdMaterials++;
+                }
+            });
+        } catch (\Throwable $e) {
+            foreach ($newlyStoredPublicPaths as $pubPath) {
+                if (Storage::disk('public')->exists($pubPath)) {
+                    Storage::disk('public')->delete($pubPath);
+                }
+            }
+
+            foreach ($tempPathsToDelete as $tPath) {
+                if (Storage::disk('local')->exists($tPath)) {
+                    Storage::disk('local')->delete($tPath);
+                }
+            }
+
+            return redirect()->route('admin.materials.import')->with('error', 'Import failed: ' . $e->getMessage() . ' Newly created files were cleaned up.');
+        }
+
+        foreach ($tempPathsToDelete as $tPath) {
+            if (Storage::disk('local')->exists($tPath)) {
+                Storage::disk('local')->delete($tPath);
+            }
+        }
+
+        return redirect()->route('admin.materials')->with('success', "Bulk PDF Upload Successful! {$createdMaterials} PDF Study Materials imported successfully.");
+    }
+
+    private function formatFileSize($bytes)
+    {
+        if ($bytes >= 1048576) {
+            return number_format($bytes / 1048576, 2) . ' MB';
+        } elseif ($bytes >= 1024) {
+            return number_format($bytes / 1024, 2) . ' KB';
+        }
+        return $bytes . ' bytes';
+    }
 }
+
 

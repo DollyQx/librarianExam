@@ -55,9 +55,13 @@
     </div>
 
     <!-- Materials Table -->
-    <div class="col-lg-8">
         <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
-            <h5 class="fw-bold text-dark mb-4"><i class="fas fa-file-pdf text-danger me-2"></i> Uploaded PDF Files</h5>
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h5 class="fw-bold text-dark mb-0"><i class="fas fa-file-pdf text-danger me-2"></i> Uploaded PDF Files</h5>
+                <a href="{{ route('admin.materials.import') }}" class="btn btn-outline-danger btn-sm fw-bold">
+                    <i class="fas fa-file-upload me-1"></i> Bulk PDF Upload
+                </a>
+            </div>
             <div class="table-responsive">
                 <table class="table table-hover align-middle">
                     <thead class="table-light">

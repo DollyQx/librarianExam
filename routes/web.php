@@ -159,6 +159,9 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::delete('/topics/{topic}', [AdminController::class, 'deleteTopic'])->name('topics.delete');
 
     Route::get('/materials', [AdminController::class, 'materials'])->name('materials');
+    Route::get('/materials/import', [AdminController::class, 'importMaterialsForm'])->name('materials.import');
+    Route::post('/materials/import/preview', [AdminController::class, 'previewMaterialImport'])->name('materials.import.preview');
+    Route::post('/materials/import/execute', [AdminController::class, 'executeMaterialImport'])->name('materials.import.execute');
     Route::post('/materials', [AdminController::class, 'storeMaterial'])->name('materials.store');
     Route::put('/materials/{material}', [AdminController::class, 'updateMaterial'])->name('materials.update');
     Route::delete('/materials/{material}', [AdminController::class, 'deleteMaterial'])->name('materials.delete');
