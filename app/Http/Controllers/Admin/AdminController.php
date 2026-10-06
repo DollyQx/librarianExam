@@ -16,6 +16,7 @@ use App\Models\Topic;
 use App\Models\User;
 use App\Models\Video;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -647,4 +648,394 @@ class AdminController extends Controller
 
         return back()->with('success', 'Reply submitted successfully.');
     }
+
+    // Bulk Quiz Import Methods
+    public function importQuizzesForm()
+    {
+        return view('admin.import_quizzes');
+    }
+
+    public function downloadImportTemplate()
+    {
+        $headers = [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="quiz_import_template.csv"',
+        ];
+
+        $columns = [
+            'quiz_title',
+            'subject',
+            'topic',
+            'question',
+            'option_a',
+            'option_b',
+            'option_c',
+            'option_d',
+            'correct_answer',
+            'explanation',
+            'marks',
+            'negative_marks',
+            'duration_minutes',
+            'access_type',
+        ];
+
+        $sampleData = [
+            [
+                'quiz_title' => 'Bihar Librarian Mock Test 1',
+                'subject' => 'Library Science',
+                'topic' => 'Classification',
+                'question' => 'Who is considered the father of Library Science in India?',
+                'option_a' => 'Dr. S.R. Ranganathan',
+                'option_b' => 'Melvil Dewey',
+                'option_c' => 'C.A. Cutter',
+                'option_d' => 'W.C. Berwick Sayers',
+                'correct_answer' => 'A',
+                'explanation' => 'Dr. S.R. Ranganathan is known as the father of library science in India.',
+                'marks' => '1.0',
+                'negative_marks' => '0.25',
+                'duration_minutes' => '60',
+                'access_type' => 'membership',
+            ],
+            [
+                'quiz_title' => 'Bihar Librarian Mock Test 1',
+                'subject' => 'Library Science',
+                'topic' => 'Classification',
+                'question' => 'Colon Classification was published in which year?',
+                'option_a' => '1933',
+                'option_b' => '1928',
+                'option_c' => '1944',
+                'option_d' => '1950',
+                'correct_answer' => 'A',
+                'explanation' => 'Colon Classification (CC) by S.R. Ranganathan was first published in 1933.',
+                'marks' => '1.0',
+                'negative_marks' => '0.25',
+                'duration_minutes' => '60',
+                'access_type' => 'membership',
+            ],
+            [
+                'quiz_title' => 'Bihar LET Free Practice Quiz',
+                'subject' => 'General Knowledge',
+                'topic' => 'General Awareness',
+                'question' => 'What is the capital of Bihar?',
+                'option_a' => 'Patna',
+                'option_b' => 'Gaya',
+                'option_c' => 'Muzaffarpur',
+                'option_d' => 'Bhagalpur',
+                'correct_answer' => 'A',
+                'explanation' => 'Patna is the capital city of the Indian state of Bihar.',
+                'marks' => '1.0',
+                'negative_marks' => '0.00',
+                'duration_minutes' => '15',
+                'access_type' => 'free',
+            ],
+        ];
+
+        $callback = function() use ($columns, $sampleData) {
+            $file = fopen('php://output', 'w');
+            fputs($file, "\xEF\xBB\xBF"); // UTF-8 BOM
+            fputcsv($file, $columns);
+
+            foreach ($sampleData as $row) {
+                fputcsv($file, $row);
+            }
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
+
+    public function previewQuizImport(Request $request)
+    {
+        $request->validate([
+            'csv_file' => 'required|file|max:5120',
+        ]);
+
+        $file = $request->file('csv_file');
+        $content = file_get_contents($file->getRealPath());
+
+        // Strip UTF-8 BOM if present
+        if (substr($content, 0, 3) === "\xEF\xBB\xBF") {
+            $content = substr($content, 3);
+        }
+
+        $lines = preg_split('/\r\n|\r|\n/', trim($content));
+        $rows = [];
+        foreach ($lines as $line) {
+            if (trim($line) === '') continue;
+            $data = str_getcsv($line);
+            if (array_filter($data)) {
+                $rows[] = $data;
+            }
+        }
+
+        if (count($rows) < 2) {
+            return back()->with('error', 'CSV file is empty or missing data rows.');
+        }
+
+        $headers = array_map(function($h) {
+            return strtolower(trim(preg_replace('/[\x00-\x1F\x7F\xEF\xBB\xBF]/u', '', $h)));
+        }, $rows[0]);
+
+        $requiredColumns = ['quiz_title', 'question', 'option_a', 'option_b', 'option_c', 'option_d', 'correct_answer'];
+        foreach ($requiredColumns as $col) {
+            if (!in_array($col, $headers)) {
+                return back()->with('error', "Missing required column in CSV: '{$col}'");
+            }
+        }
+
+        $headerMap = array_flip($headers);
+        $validationErrors = [];
+        $validRows = [];
+        $quizTitles = [];
+
+        for ($i = 1; $i < count($rows); $i++) {
+            $rowNum = $i + 1;
+            $data = $rows[$i];
+
+            $getValue = function($col) use ($headerMap, $data) {
+                $idx = $headerMap[$col] ?? null;
+                return ($idx !== null && isset($data[$idx])) ? trim($data[$idx]) : '';
+            };
+
+            $quizTitle = $getValue('quiz_title');
+            $subject = $getValue('subject');
+            $topic = $getValue('topic');
+            $question = $getValue('question');
+            $optionA = $getValue('option_a');
+            $optionB = $getValue('option_b');
+            $optionC = $getValue('option_c');
+            $optionD = $getValue('option_d');
+            $correctAnswer = strtoupper($getValue('correct_answer'));
+            $explanation = $getValue('explanation');
+            $marks = $getValue('marks');
+            $negativeMarks = $getValue('negative_marks');
+            $durationMinutes = $getValue('duration_minutes');
+            $accessType = strtolower($getValue('access_type'));
+
+            $rowErrors = [];
+
+            if (empty($quizTitle)) {
+                $rowErrors[] = 'quiz_title is required';
+            }
+            if (empty($question)) {
+                $rowErrors[] = 'question text is required';
+            }
+            if (empty($optionA) || empty($optionB) || empty($optionC) || empty($optionD)) {
+                $rowErrors[] = 'option_a, option_b, option_c, and option_d are required';
+            }
+            if (!in_array($correctAnswer, ['A', 'B', 'C', 'D'])) {
+                $rowErrors[] = 'correct_answer must be A, B, C, or D';
+            }
+            if ($marks !== '' && !is_numeric($marks)) {
+                $rowErrors[] = 'marks must be numeric';
+            }
+            if ($negativeMarks !== '' && !is_numeric($negativeMarks)) {
+                $rowErrors[] = 'negative_marks must be numeric';
+            }
+            if ($durationMinutes !== '' && (!is_numeric($durationMinutes) || $durationMinutes < 1)) {
+                $rowErrors[] = 'duration_minutes must be numeric >= 1';
+            }
+            if ($accessType !== '' && !in_array($accessType, ['free', 'membership'])) {
+                $rowErrors[] = 'access_type must be free or membership';
+            }
+
+            if (!empty($rowErrors)) {
+                $validationErrors[] = [
+                    'row' => $rowNum,
+                    'quiz_title' => $quizTitle ?: 'N/A',
+                    'error' => implode(' | ', $rowErrors),
+                ];
+            } else {
+                $validRows[] = [
+                    'row_num' => $rowNum,
+                    'quiz_title' => $quizTitle,
+                    'subject' => $subject,
+                    'topic' => $topic,
+                    'question' => $question,
+                    'option_a' => $optionA,
+                    'option_b' => $optionB,
+                    'option_c' => $optionC,
+                    'option_d' => $optionD,
+                    'correct_answer' => $correctAnswer,
+                    'explanation' => $explanation,
+                    'marks' => $marks !== '' ? (float)$marks : 1.0,
+                    'negative_marks' => $negativeMarks !== '' ? (float)$negativeMarks : 0.25,
+                    'duration_minutes' => $durationMinutes !== '' ? (int)$durationMinutes : 30,
+                    'access_type' => $accessType ?: 'free',
+                ];
+
+                if (!in_array($quizTitle, $quizTitles)) {
+                    $quizTitles[] = $quizTitle;
+                }
+            }
+        }
+
+        $existingQuizzes = Quiz::whereIn('title', $quizTitles)->pluck('title')->toArray();
+
+        session([
+            'bulk_quiz_import_rows' => $validRows,
+            'bulk_quiz_import_errors' => $validationErrors,
+        ]);
+
+        return view('admin.import_quizzes', [
+            'previewMode' => true,
+            'validRows' => $validRows,
+            'validationErrors' => $validationErrors,
+            'quizTitles' => $quizTitles,
+            'existingQuizzes' => $existingQuizzes,
+            'totalRows' => count($rows) - 1,
+        ]);
+    }
+
+    public function executeQuizImport(Request $request)
+    {
+        $validRows = session('bulk_quiz_import_rows');
+        if (empty($validRows) && $request->has('csv_payload')) {
+            $validRows = json_decode($request->input('csv_payload'), true);
+        }
+
+        $validationErrors = session('bulk_quiz_import_errors', []);
+
+        if (empty($validRows)) {
+            return redirect()->route('admin.quizzes.import')->with('error', 'No valid import session found or file had errors.');
+        }
+
+        if (!empty($validationErrors)) {
+            return redirect()->route('admin.quizzes.import')->with('error', 'Import aborted because the file contains validation errors. Please fix all errors before importing.');
+        }
+
+        $duplicateMode = $request->input('duplicate_mode', 'add_to_existing');
+
+        $quizzesCreated = 0;
+        $questionsImported = 0;
+        $skippedRows = 0;
+
+        DB::transaction(function() use ($validRows, $duplicateMode, &$quizzesCreated, &$questionsImported, &$skippedRows) {
+            $grouped = [];
+            foreach ($validRows as $row) {
+                $grouped[$row['quiz_title']][] = $row;
+            }
+
+            foreach ($grouped as $quizTitle => $quizRows) {
+                $firstRow = $quizRows[0];
+
+                $subjectId = null;
+                if (!empty($firstRow['subject'])) {
+                    $subjectName = trim($firstRow['subject']);
+                    $subject = Subject::firstOrCreate(
+                        ['name' => $subjectName],
+                        [
+                            'slug' => Str::slug($subjectName),
+                            'description' => $subjectName,
+                            'is_active' => true,
+                        ]
+                    );
+                    $subjectId = $subject->id;
+                }
+
+                $topicId = null;
+                if (!empty($firstRow['topic']) && $subjectId) {
+                    $topicName = trim($firstRow['topic']);
+                    $topic = Topic::firstOrCreate(
+                        [
+                            'subject_id' => $subjectId,
+                            'name' => $topicName,
+                        ],
+                        [
+                            'slug' => Str::slug($topicName),
+                            'is_active' => true,
+                        ]
+                    );
+                    $topicId = $topic->id;
+                }
+
+                $existingQuiz = Quiz::where('title', $quizTitle)->first();
+
+                if ($existingQuiz && $duplicateMode === 'create_new') {
+                    $newTitle = $quizTitle . ' (Imported ' . date('d M Y H:i') . ')';
+                    $quiz = Quiz::create([
+                        'subject_id' => $subjectId,
+                        'topic_id' => $topicId,
+                        'title' => $newTitle,
+                        'slug' => Str::slug($newTitle) . '-' . time() . '-' . rand(100, 999),
+                        'description' => 'Bulk imported test series.',
+                        'type' => $subjectId ? 'subject' : 'mock',
+                        'duration_minutes' => $firstRow['duration_minutes'],
+                        'pass_percentage' => 40,
+                        'marks_per_question' => $firstRow['marks'],
+                        'negative_marking_per_question' => $firstRow['negative_marks'],
+                        'is_active' => true,
+                        'access_type' => $firstRow['access_type'],
+                        'is_paid' => ($firstRow['access_type'] === 'membership'),
+                    ]);
+                    $quizzesCreated++;
+                } elseif ($existingQuiz && $duplicateMode === 'add_to_existing') {
+                    $quiz = $existingQuiz;
+                } else {
+                    $quiz = Quiz::create([
+                        'subject_id' => $subjectId,
+                        'topic_id' => $topicId,
+                        'title' => $quizTitle,
+                        'slug' => Str::slug($quizTitle) . '-' . time() . '-' . rand(100, 999),
+                        'description' => 'Bulk imported test series.',
+                        'type' => $subjectId ? 'subject' : 'mock',
+                        'duration_minutes' => $firstRow['duration_minutes'],
+                        'pass_percentage' => 40,
+                        'marks_per_question' => $firstRow['marks'],
+                        'negative_marking_per_question' => $firstRow['negative_marks'],
+                        'is_active' => true,
+                        'access_type' => $firstRow['access_type'],
+                        'is_paid' => ($firstRow['access_type'] === 'membership'),
+                    ]);
+                    $quizzesCreated++;
+                }
+
+                $existingOrder = $quiz->questions()->max('order') ?? 0;
+
+                foreach ($quizRows as $qRow) {
+                    $duplicateQuestion = Question::where('quiz_id', $quiz->id)
+                        ->where('question_text', $qRow['question'])
+                        ->first();
+
+                    if ($duplicateQuestion) {
+                        $skippedRows++;
+                        continue;
+                    }
+
+                    $existingOrder++;
+                    $question = Question::create([
+                        'quiz_id' => $quiz->id,
+                        'question_text' => $qRow['question'],
+                        'explanation' => $qRow['explanation'] ?: null,
+                        'marks' => $qRow['marks'],
+                        'order' => $existingOrder,
+                    ]);
+
+                    $options = [
+                        'A' => $qRow['option_a'],
+                        'B' => $qRow['option_b'],
+                        'C' => $qRow['option_c'],
+                        'D' => $qRow['option_d'],
+                    ];
+
+                    $optOrder = 1;
+                    foreach ($options as $key => $optText) {
+                        QuizOption::create([
+                            'question_id' => $question->id,
+                            'option_text' => $optText,
+                            'is_correct' => ($key === $qRow['correct_answer']),
+                            'order' => $optOrder++,
+                        ]);
+                    }
+
+                    $questionsImported++;
+                }
+            }
+        });
+
+        session()->forget(['bulk_quiz_import_rows', 'bulk_quiz_import_errors']);
+
+        return redirect()->route('admin.quizzes')->with('success', "Import Successful! Quizzes created/updated: {$quizzesCreated}, Questions imported: {$questionsImported}, Skipped duplicate rows: {$skippedRows}.");
+    }
 }
+

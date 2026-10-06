@@ -169,6 +169,10 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::delete('/videos/{video}', [AdminController::class, 'deleteVideo'])->name('videos.delete');
 
     Route::get('/quizzes', [AdminController::class, 'quizzes'])->name('quizzes');
+    Route::get('/quizzes/import', [AdminController::class, 'importQuizzesForm'])->name('quizzes.import');
+    Route::get('/quizzes/import/template', [AdminController::class, 'downloadImportTemplate'])->name('quizzes.import.template');
+    Route::post('/quizzes/import/preview', [AdminController::class, 'previewQuizImport'])->name('quizzes.import.preview');
+    Route::post('/quizzes/import/execute', [AdminController::class, 'executeQuizImport'])->name('quizzes.import.execute');
     Route::post('/quizzes', [AdminController::class, 'storeQuiz'])->name('quizzes.store');
     Route::put('/quizzes/{quiz}', [AdminController::class, 'updateQuiz'])->name('quizzes.update');
     Route::delete('/quizzes/{quiz}', [AdminController::class, 'deleteQuiz'])->name('quizzes.delete');

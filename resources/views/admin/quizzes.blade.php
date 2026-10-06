@@ -88,7 +88,12 @@
     <!-- Quizzes List -->
     <div class="col-lg-8">
         <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
-            <h5 class="fw-bold text-dark mb-4"><i class="fas fa-vial text-primary me-2"></i> Created Quizzes & Tests</h5>
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h5 class="fw-bold text-dark mb-0"><i class="fas fa-vial text-primary me-2"></i> Created Quizzes & Tests</h5>
+                <a href="{{ route('admin.quizzes.import') }}" class="btn btn-sm btn-success fw-bold">
+                    <i class="fas fa-file-excel me-1"></i> Bulk Import Quiz
+                </a>
+            </div>
             <div class="table-responsive">
                 <table class="table table-hover align-middle">
                     <thead class="table-light">

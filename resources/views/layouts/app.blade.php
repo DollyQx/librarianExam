@@ -234,6 +234,11 @@
                     <li class="nav-item">
                         <a class="nav-link {{ request()->is('videos*') ? 'active' : '' }}" href="{{ url('/videos') }}">वीडियो</a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link text-warning fw-bold {{ request()->is('membership*') ? 'active' : '' }}" href="{{ route('membership.index') }}">
+                            <i class="fas fa-crown me-1 text-warning"></i> Membership (₹49)
+                        </a>
+                    </li>
 
                     @auth
                         @if(Auth::user()->isStudent())
