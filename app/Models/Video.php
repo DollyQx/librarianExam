@@ -18,8 +18,14 @@ class Video extends Model
         'youtube_id',
         'thumbnail_url',
         'is_active',
+        'access_type',
         'sort_order',
     ];
+
+    public function isMembershipRequired(): bool
+    {
+        return $this->access_type === 'membership';
+    }
 
     protected $casts = [
         'is_active' => 'boolean',

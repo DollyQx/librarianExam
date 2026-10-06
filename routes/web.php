@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\PublicController;
+use App\Http\Controllers\Student\MembershipController;
 use App\Http\Controllers\Student\StudentController;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Route;
@@ -20,13 +21,20 @@ Route::post('/contact', [PublicController::class, 'handleContactSubmit'])->name(
 Route::get('/privacy-policy', [PublicController::class, 'privacy'])->name('privacy');
 Route::get('/terms', [PublicController::class, 'terms'])->name('terms');
 
+// Membership Routes
+Route::get('/membership', [MembershipController::class, 'index'])->name('membership.index');
+Route::post('/membership/order', [MembershipController::class, 'createOrder'])->name('membership.order')->middleware('auth');
+Route::post('/membership/verify', [MembershipController::class, 'verifyPayment'])->name('membership.verify')->middleware('auth');
+
 // Public Subjects & Topics
 Route::get('/subjects', [StudentController::class, 'subjects'])->name('subjects');
 Route::get('/student/subjects', [StudentController::class, 'subjects'])->name('student.subjects');
 
-// Public PDF Study Materials & Downloads
+// Public PDF Study Materials & Online Viewing / Downloads
 Route::get('/materials', [StudentController::class, 'materials'])->name('materials');
 Route::get('/student/materials', [StudentController::class, 'materials'])->name('student.materials');
+Route::get('/materials/{material}/view', [StudentController::class, 'viewMaterial'])->name('materials.view');
+Route::get('/materials/{material}/stream', [StudentController::class, 'streamMaterial'])->name('materials.stream');
 Route::get('/materials/{material}/download', [StudentController::class, 'downloadMaterial'])->name('materials.download');
 Route::get('/student/materials/{material}/download', [StudentController::class, 'downloadMaterial'])->name('student.materials.download');
 
@@ -58,6 +66,7 @@ Route::get('/sitemap.xml', function () {
         ['loc' => $baseUrl . '/tests', 'priority' => '0.9', 'freq' => 'daily'],
         ['loc' => $baseUrl . '/materials', 'priority' => '0.8', 'freq' => 'weekly'],
         ['loc' => $baseUrl . '/videos', 'priority' => '0.8', 'freq' => 'weekly'],
+        ['loc' => $baseUrl . '/membership', 'priority' => '0.9', 'freq' => 'daily'],
         ['loc' => $baseUrl . '/about', 'priority' => '0.5', 'freq' => 'monthly'],
         ['loc' => $baseUrl . '/contact', 'priority' => '0.5', 'freq' => 'monthly'],
         ['loc' => $baseUrl . '/privacy-policy', 'priority' => '0.3', 'freq' => 'yearly'],
@@ -136,6 +145,8 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/', [AdminController::class, 'dashboard'])->name('dashboard');
     Route::get('/students', [AdminController::class, 'students'])->name('students');
     Route::post('/students/{user}/toggle', [AdminController::class, 'toggleStudentStatus'])->name('students.toggle');
+    Route::post('/students/{user}/grant-membership', [AdminController::class, 'grantFreeMembership'])->name('students.grant_membership');
+    Route::post('/students/{user}/revoke-membership', [AdminController::class, 'revokeMembership'])->name('students.revoke_membership');
 
     Route::get('/subjects', [AdminController::class, 'subjects'])->name('subjects');
     Route::post('/subjects', [AdminController::class, 'storeSubject'])->name('subjects.store');
@@ -172,3 +183,4 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/doubts', [AdminController::class, 'doubts'])->name('doubts');
     Route::post('/doubts/{doubt}/reply', [AdminController::class, 'replyDoubt'])->name('doubts.reply');
 });
+

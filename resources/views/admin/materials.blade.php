@@ -25,6 +25,13 @@
                     </select>
                 </div>
                 <div class="mb-3">
+                    <label class="form-label fw-bold small">Access Control</label>
+                    <select name="access_type" class="form-select fw-bold">
+                        <option value="free">Free Access</option>
+                        <option value="membership">Membership Required (₹49 Plan)</option>
+                    </select>
+                </div>
+                <div class="mb-3">
                     <label class="form-label fw-bold small">Sort Order</label>
                     <input type="number" name="sort_order" class="form-control" value="0">
                 </div>
@@ -58,8 +65,8 @@
                             <th>Order</th>
                             <th>PDF Title</th>
                             <th>Subject</th>
+                            <th>Access Type</th>
                             <th>Status</th>
-                            <th>Downloads</th>
                             <th class="text-end">Actions</th>
                         </tr>
                     </thead>
@@ -73,13 +80,18 @@
                                 </td>
                                 <td><span class="badge bg-light text-dark border">{{ $pdf->subject->name ?? 'General' }}</span></td>
                                 <td>
+                                    @if($pdf->isMembershipRequired())
+                                        <span class="badge bg-warning text-dark fw-bold"><i class="fas fa-lock me-1"></i> Membership</span>
+                                    @else
+                                        <span class="badge bg-success">Free</span>
+                                    @endif
+                                </td>
+                                <td>
                                     <span class="badge {{ $pdf->is_active ? 'bg-success bg-opacity-10 text-success' : 'bg-secondary bg-opacity-10 text-secondary' }} fw-bold">
                                         {{ $pdf->is_active ? 'Active' : 'Draft' }}
                                     </span>
                                 </td>
-                                <td><span class="badge bg-info bg-opacity-10 text-info fw-bold">{{ $pdf->downloads_count }}</span></td>
                                 <td class="text-end">
-                                    <a href="{{ Storage::url($pdf->file_path) }}" target="_blank" class="btn btn-sm btn-outline-primary me-1" title="View PDF"><i class="fas fa-eye"></i></a>
                                     <button class="btn btn-sm btn-outline-secondary me-1" data-bs-toggle="modal" data-bs-target="#editMaterialModal{{ $pdf->id }}" title="Edit PDF Info"><i class="fas fa-edit"></i></button>
                                     <form method="POST" action="{{ route('admin.materials.delete', $pdf->id) }}" onsubmit="return confirm('Delete this PDF file?');" class="d-inline">
                                         @csrf
@@ -111,6 +123,13 @@
                                                         @foreach($subjects as $subj)
                                                             <option value="{{ $subj->id }}" {{ $pdf->subject_id == $subj->id ? 'selected' : '' }}>{{ $subj->name }}</option>
                                                         @endforeach
+                                                    </select>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label fw-bold small">Access Control</label>
+                                                    <select name="access_type" class="form-select fw-bold">
+                                                        <option value="free" {{ $pdf->access_type === 'free' ? 'selected' : '' }}>Free Access</option>
+                                                        <option value="membership" {{ $pdf->access_type === 'membership' ? 'selected' : '' }}>Membership Required (₹49 Plan)</option>
                                                     </select>
                                                 </div>
                                                 <div class="mb-3">

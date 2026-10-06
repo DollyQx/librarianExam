@@ -21,7 +21,7 @@
                 @csrf
                 <div class="mb-3">
                     <label class="form-label fw-bold small">Test Title</label>
-                    <input type="text" name="title" class="form-control" placeholder="e.g. KVS Librarian Full Mock Test #1" value="{{ old('title') }}" required>
+                    <input type="text" name="title" class="form-control" placeholder="e.g. Bihar Librarian Full Mock Test #1" value="{{ old('title') }}" required>
                 </div>
                 <div class="mb-3">
                     <label class="form-label fw-bold small">Subject</label>
@@ -38,6 +38,13 @@
                         <option value="mock">Full Mock Test</option>
                         <option value="subject">Subject-wise Test</option>
                         <option value="topic">Topic-wise Test</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold small">Access Control</label>
+                    <select name="access_type" class="form-select fw-bold">
+                        <option value="free">Free Access</option>
+                        <option value="membership">Membership Required (₹49 Plan)</option>
                     </select>
                 </div>
                 <div class="mb-3">
@@ -89,7 +96,7 @@
                             <th>Order</th>
                             <th>Test Title</th>
                             <th>Type / Subject</th>
-                            <th>Duration</th>
+                            <th>Access</th>
                             <th>MCQs</th>
                             <th>Status</th>
                             <th class="text-end">Actions</th>
@@ -101,13 +108,19 @@
                                 <td><span class="badge bg-light text-dark border">{{ $quiz->sort_order }}</span></td>
                                 <td>
                                     <div class="fw-bold text-dark">{{ $quiz->title }}</div>
-                                    <small class="text-muted">+{{ $quiz->marks_per_question }} marks / -{{ $quiz->negative_marking_per_question }} negative</small>
+                                    <small class="text-muted">{{ $quiz->duration_minutes }}m | +{{ $quiz->marks_per_question }} marks</small>
                                 </td>
                                 <td>
                                     <span class="badge bg-primary bg-opacity-10 text-primary">{{ ucfirst($quiz->type) }}</span>
                                     <div class="small text-muted mt-1">{{ $quiz->subject->name ?? 'All Subjects' }}</div>
                                 </td>
-                                <td><i class="fas fa-clock text-warning me-1"></i> {{ $quiz->duration_minutes }}m</td>
+                                <td>
+                                    @if($quiz->isMembershipRequired())
+                                        <span class="badge bg-warning text-dark fw-bold"><i class="fas fa-lock me-1"></i> Membership</span>
+                                    @else
+                                        <span class="badge bg-success">Free</span>
+                                    @endif
+                                </td>
                                 <td><span class="badge bg-info bg-opacity-10 text-info fs-6 fw-bold">{{ $quiz->questions_count }}</span></td>
                                 <td>
                                     @if($quiz->is_active)
@@ -118,7 +131,7 @@
                                 </td>
                                 <td class="text-end">
                                     <a href="{{ route('admin.questions', $quiz->id) }}" class="btn btn-sm btn-primary me-1 fw-bold" title="Builder / Edit Questions">
-                                        <i class="fas fa-layer-group me-1"></i> Questions ({{ $quiz->questions_count }})
+                                        <i class="fas fa-layer-group me-1"></i> MCQs ({{ $quiz->questions_count }})
                                     </a>
                                     <button class="btn btn-sm btn-outline-secondary me-1" data-bs-toggle="modal" data-bs-target="#editQuizModal{{ $quiz->id }}" title="Edit Settings">
                                         <i class="fas fa-cog"></i>
@@ -162,6 +175,13 @@
                                                         <option value="mock" {{ $quiz->type === 'mock' ? 'selected' : '' }}>Full Mock Test</option>
                                                         <option value="subject" {{ $quiz->type === 'subject' ? 'selected' : '' }}>Subject-wise Test</option>
                                                         <option value="topic" {{ $quiz->type === 'topic' ? 'selected' : '' }}>Topic-wise Test</option>
+                                                    </select>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label fw-bold small">Access Control</label>
+                                                    <select name="access_type" class="form-select fw-bold">
+                                                        <option value="free" {{ $quiz->access_type === 'free' ? 'selected' : '' }}>Free Access</option>
+                                                        <option value="membership" {{ $quiz->access_type === 'membership' ? 'selected' : '' }}>Membership Required (₹49 Plan)</option>
                                                     </select>
                                                 </div>
                                                 <div class="mb-3">

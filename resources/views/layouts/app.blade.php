@@ -345,8 +345,11 @@
             </div>
         </div>
         <div class="footer-bottom text-center text-muted">
-            <div class="container">
+            <div class="container d-flex flex-column flex-md-row justify-content-between align-items-center gap-2">
                 <p class="mb-0">© {{ date('Y') }} {{ config('branding.name', 'BIHAR LET/Librarian Exam') }}. सर्वाधिकार सुरक्षित | संचालक: Sumit Verma</p>
+                <p class="mb-0 small">
+                    Developed by <a href="https://startizlabs.com" target="_blank" rel="noopener" class="text-white text-decoration-underline fw-bold">DollyQx</a>
+                </p>
             </div>
         </div>
     </footer>

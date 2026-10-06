@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Doubt;
 use App\Models\DoubtReply;
+use App\Models\Membership;
 use App\Models\Question;
 use App\Models\Quiz;
 use App\Models\QuizAttempt;
@@ -41,7 +42,9 @@ class AdminController extends Controller
     // Students Management
     public function students(Request $request)
     {
-        $query = User::where('role', 'student');
+        $query = User::where('role', 'student')->with(['memberships' => function($q) {
+            $q->latest();
+        }]);
         if ($request->filled('search')) {
             $query->where(function ($q) use ($request) {
                 $q->where('name', 'like', '%' . $request->search . '%')
@@ -50,6 +53,52 @@ class AdminController extends Controller
         }
         $students = $query->latest()->paginate(15);
         return view('admin.students', compact('students'));
+    }
+
+    public function grantFreeMembership(User $user)
+    {
+        if ($user->role === 'admin') {
+            return back()->with('error', 'Cannot grant membership to an admin account.');
+        }
+
+        $existingActive = $user->memberships()
+            ->where('status', 'active')
+            ->where('expires_at', '>', now())
+            ->latest('expires_at')
+            ->first();
+
+        if ($existingActive) {
+            $startsAt = $existingActive->starts_at;
+            $expiresAt = $existingActive->expires_at->copy()->addDays(30);
+        } else {
+            $startsAt = now();
+            $expiresAt = now()->addDays(30);
+        }
+
+        Membership::create([
+            'user_id' => $user->id,
+            'plan_name' => 'Studyly Membership',
+            'price' => 0.00,
+            'status' => 'active',
+            'payment_method' => 'admin_granted',
+            'starts_at' => $startsAt,
+            'expires_at' => $expiresAt,
+        ]);
+
+        return back()->with('success', 'Free membership granted to ' . $user->name . ' for 1 month.');
+    }
+
+    public function revokeMembership(User $user)
+    {
+        if ($user->role === 'admin') {
+            return back()->with('error', 'Cannot modify admin account status.');
+        }
+
+        $user->memberships()
+            ->where('status', 'active')
+            ->update(['status' => 'revoked']);
+
+        return back()->with('success', 'Active membership revoked for ' . $user->name . '. Financial history preserved.');
     }
 
     public function toggleStudentStatus(User $user)
@@ -197,6 +246,7 @@ class AdminController extends Controller
             'topic_id' => 'nullable|exists:topics,id',
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
+            'access_type' => 'nullable|in:free,membership',
             'pdf_file' => 'required|file|mimes:pdf|max:20480',
             'sort_order' => 'nullable|integer',
         ]);
@@ -205,6 +255,9 @@ class AdminController extends Controller
         $fileName = time() . '_' . Str::slug($request->title) . '.pdf';
         $filePath = $file->storeAs('study_materials', $fileName, 'public');
 
+        $accessType = $request->input('access_type', 'free');
+        $isPaid = ($accessType === 'membership');
+
         StudyMaterial::create([
             'subject_id' => $request->subject_id,
             'topic_id' => $request->topic_id,
@@ -212,6 +265,9 @@ class AdminController extends Controller
             'description' => $request->description,
             'file_path' => $filePath,
             'file_size' => $file->getSize(),
+            'access_type' => $accessType,
+            'is_paid' => $isPaid,
+            'price' => 0.00,
             'is_active' => $request->has('is_active'),
             'sort_order' => (int) $request->input('sort_order', 0),
         ]);
@@ -226,15 +282,21 @@ class AdminController extends Controller
             'topic_id' => 'nullable|exists:topics,id',
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
+            'access_type' => 'nullable|in:free,membership',
             'pdf_file' => 'nullable|file|mimes:pdf|max:20480',
             'sort_order' => 'nullable|integer',
         ]);
+
+        $accessType = $request->input('access_type', $material->access_type ?? 'free');
+        $isPaid = ($accessType === 'membership');
 
         $data = [
             'subject_id' => $request->subject_id,
             'topic_id' => $request->topic_id,
             'title' => $request->title,
             'description' => $request->description,
+            'access_type' => $accessType,
+            'is_paid' => $isPaid,
             'is_active' => $request->has('is_active'),
             'sort_order' => (int) $request->input('sort_order', 0),
         ];
@@ -281,6 +343,7 @@ class AdminController extends Controller
             'topic_id' => 'nullable|exists:topics,id',
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
+            'access_type' => 'nullable|in:free,membership',
             'youtube_url' => 'required|url',
             'thumbnail_url' => 'nullable|url',
             'sort_order' => 'nullable|integer',
@@ -300,6 +363,7 @@ class AdminController extends Controller
             'topic_id' => $request->topic_id,
             'title' => $request->title,
             'description' => $request->description,
+            'access_type' => $request->input('access_type', 'free'),
             'youtube_url' => $request->youtube_url,
             'youtube_id' => $youtubeId,
             'thumbnail_url' => $thumbnail,
@@ -317,6 +381,7 @@ class AdminController extends Controller
             'topic_id' => 'nullable|exists:topics,id',
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
+            'access_type' => 'nullable|in:free,membership',
             'youtube_url' => 'required|url',
             'thumbnail_url' => 'nullable|url',
             'sort_order' => 'nullable|integer',
@@ -336,6 +401,7 @@ class AdminController extends Controller
             'topic_id' => $request->topic_id,
             'title' => $request->title,
             'description' => $request->description,
+            'access_type' => $request->input('access_type', $video->access_type ?? 'free'),
             'youtube_url' => $request->youtube_url,
             'youtube_id' => $youtubeId,
             'thumbnail_url' => $thumbnail,
@@ -372,6 +438,7 @@ class AdminController extends Controller
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
             'type' => 'required|in:topic,subject,mock',
+            'access_type' => 'nullable|in:free,membership',
             'duration_minutes' => 'required|integer|min:1|max:300',
             'pass_percentage' => 'required|numeric|min:0|max:100',
             'marks_per_question' => 'required|numeric|min:0.25',
@@ -384,6 +451,9 @@ class AdminController extends Controller
             return back()->withErrors(['is_active' => 'New test series must be saved as Draft first to add questions before publishing.'])->withInput();
         }
 
+        $accessType = $request->input('access_type', 'free');
+        $isPaid = ($accessType === 'membership');
+
         Quiz::create([
             'subject_id' => $request->subject_id,
             'topic_id' => $request->topic_id,
@@ -391,6 +461,9 @@ class AdminController extends Controller
             'slug' => Str::slug($request->title) . '-' . time(),
             'description' => $request->description,
             'type' => $request->type,
+            'access_type' => $accessType,
+            'is_paid' => $isPaid,
+            'price' => 0.00,
             'duration_minutes' => $request->duration_minutes,
             'pass_percentage' => $request->pass_percentage,
             'marks_per_question' => $request->marks_per_question,
@@ -410,6 +483,7 @@ class AdminController extends Controller
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
             'type' => 'required|in:topic,subject,mock',
+            'access_type' => 'nullable|in:free,membership',
             'duration_minutes' => 'required|integer|min:1|max:300',
             'pass_percentage' => 'required|numeric|min:0|max:100',
             'marks_per_question' => 'required|numeric|min:0.25',
@@ -424,6 +498,9 @@ class AdminController extends Controller
             return back()->withErrors(['is_active' => 'Cannot publish test series! The test must have at least 1 question with a designated correct answer.'])->withInput();
         }
 
+        $accessType = $request->input('access_type', $quiz->access_type ?? 'free');
+        $isPaid = ($accessType === 'membership');
+
         $quiz->update([
             'subject_id' => $request->subject_id,
             'topic_id' => $request->topic_id,
@@ -431,6 +508,8 @@ class AdminController extends Controller
             'slug' => Str::slug($request->title) . '-' . $quiz->id,
             'description' => $request->description,
             'type' => $request->type,
+            'access_type' => $accessType,
+            'is_paid' => $isPaid,
             'duration_minutes' => $request->duration_minutes,
             'pass_percentage' => $request->pass_percentage,
             'marks_per_question' => $request->marks_per_question,

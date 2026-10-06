@@ -25,6 +25,13 @@
                     </select>
                 </div>
                 <div class="mb-3">
+                    <label class="form-label fw-bold small">Access Control</label>
+                    <select name="access_type" class="form-select fw-bold">
+                        <option value="free">Free Access</option>
+                        <option value="membership">Membership Required (₹49 Plan)</option>
+                    </select>
+                </div>
+                <div class="mb-3">
                     <label class="form-label fw-bold small">YouTube URL</label>
                     <input type="url" name="youtube_url" class="form-control" placeholder="https://www.youtube.com/watch?v=..." required>
                     <small class="text-muted extra-small">Paste YouTube watch link or shorts/embed URL.</small>
@@ -63,6 +70,7 @@
                             <th>Order</th>
                             <th>Thumbnail</th>
                             <th>Title & Subject</th>
+                            <th>Access</th>
                             <th>Status</th>
                             <th class="text-end">Actions</th>
                         </tr>
@@ -77,6 +85,13 @@
                                 <td>
                                     <div class="fw-bold text-dark">{{ $video->title }}</div>
                                     <small class="text-muted d-block">{{ $video->subject->name ?? 'General' }}</small>
+                                </td>
+                                <td>
+                                    @if($video->isMembershipRequired())
+                                        <span class="badge bg-warning text-dark fw-bold"><i class="fas fa-lock me-1"></i> Membership</span>
+                                    @else
+                                        <span class="badge bg-success">Free</span>
+                                    @endif
                                 </td>
                                 <td>
                                     <span class="badge {{ $video->is_active ? 'bg-success bg-opacity-10 text-success' : 'bg-secondary bg-opacity-10 text-secondary' }} fw-bold">
@@ -118,6 +133,13 @@
                                                     </select>
                                                 </div>
                                                 <div class="mb-3">
+                                                    <label class="form-label fw-bold small">Access Control</label>
+                                                    <select name="access_type" class="form-select fw-bold">
+                                                        <option value="free" {{ $video->access_type === 'free' ? 'selected' : '' }}>Free Access</option>
+                                                        <option value="membership" {{ $video->access_type === 'membership' ? 'selected' : '' }}>Membership Required (₹49 Plan)</option>
+                                                    </select>
+                                                </div>
+                                                <div class="mb-3">
                                                     <label class="form-label fw-bold small">YouTube URL</label>
                                                     <input type="url" name="youtube_url" class="form-control" value="{{ $video->youtube_url }}" required>
                                                 </div>
@@ -147,7 +169,7 @@
                                 </div>
                             </div>
                         @empty
-                            <tr><td colspan="5" class="text-center text-muted py-4">No video lectures added yet.</td></tr>
+                            <tr><td colspan="6" class="text-center text-muted py-4">No video lectures added yet.</td></tr>
                         @endforelse
                     </tbody>
                 </table>

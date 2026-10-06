@@ -22,9 +22,15 @@ class Quiz extends Model
         'negative_marking_per_question',
         'is_active',
         'is_paid',
+        'access_type',
         'price',
         'sort_order',
     ];
+
+    public function isMembershipRequired(): bool
+    {
+        return $this->access_type === 'membership' || (bool) $this->is_paid;
+    }
 
     public function hasValidQuestions(): bool
     {

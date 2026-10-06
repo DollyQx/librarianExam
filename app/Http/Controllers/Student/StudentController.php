@@ -23,6 +23,7 @@ class StudentController extends Controller
     public function dashboard()
     {
         $user = Auth::user();
+        $activeMembership = $user ? $user->activeMembership() : null;
         $subjects = Subject::where('is_active', true)->take(4)->get();
         $availableTests = Quiz::where('is_active', true)->latest()->take(3)->get();
         $recentAttempts = QuizAttempt::with('quiz')
@@ -36,7 +37,7 @@ class StudentController extends Controller
         $repliedDoubtsCount = Doubt::where('user_id', $user->id)->where('status', 'replied')->count();
 
         return view('student.dashboard', compact(
-            'user', 'subjects', 'availableTests', 'recentAttempts',
+            'user', 'activeMembership', 'subjects', 'availableTests', 'recentAttempts',
             'recentMaterials', 'recentVideos', 'doubtsCount', 'repliedDoubtsCount'
         ));
     }
@@ -77,10 +78,59 @@ class StudentController extends Controller
         return view('student.materials', compact('materials', 'subjects'));
     }
 
+    public function viewMaterial(StudyMaterial $material)
+    {
+        if (!$material->is_active) {
+            abort(404, 'Material not available.');
+        }
+
+        // Server-side Membership Access Control
+        if ($material->isMembershipRequired()) {
+            if (!Auth::check() || !Auth::user()->hasActiveMembership()) {
+                return redirect()->route('membership.index')
+                    ->with('error', 'Membership Required! Access to this PDF requires an active Studyly Membership.');
+            }
+        }
+
+        return view('student.pdf_viewer', compact('material'));
+    }
+
+    public function streamMaterial(StudyMaterial $material)
+    {
+        if (!$material->is_active) {
+            abort(404, 'Material not available.');
+        }
+
+        if ($material->isMembershipRequired()) {
+            if (!Auth::check() || !Auth::user()->hasActiveMembership()) {
+                abort(403, 'Membership Required');
+            }
+        }
+
+        if (!Storage::disk('public')->exists($material->file_path)) {
+            abort(404, 'Requested study file is not available on server.');
+        }
+
+        $material->increment('downloads_count');
+        $fullPath = Storage::disk('public')->path($material->file_path);
+        return response()->file($fullPath, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'inline; filename="' . Str::slug($material->title) . '.pdf"',
+        ]);
+    }
+
     public function downloadMaterial(StudyMaterial $material)
     {
         if (!$material->is_active) {
             abort(404, 'Material not available.');
+        }
+
+        // Server-side Membership Access Control
+        if ($material->isMembershipRequired()) {
+            if (!Auth::check() || !Auth::user()->hasActiveMembership()) {
+                return redirect()->route('membership.index')
+                    ->with('error', 'Membership Required! Access to this PDF requires an active Studyly Membership.');
+            }
         }
 
         if (!Storage::disk('public')->exists($material->file_path)) {
@@ -88,7 +138,8 @@ class StudentController extends Controller
         }
 
         $material->increment('downloads_count');
-        return Storage::disk('public')->download($material->file_path, Str::slug($material->title) . '.pdf');
+        $fullPath = Storage::disk('public')->path($material->file_path);
+        return response()->download($fullPath, Str::slug($material->title) . '.pdf');
     }
 
     public function videos(Request $request)
@@ -124,6 +175,14 @@ class StudentController extends Controller
     {
         if (!$quiz->is_active) {
             return redirect()->route('tests')->with('error', 'This test series is currently unavailable.');
+        }
+
+        // Server-side Membership Access Control
+        if ($quiz->isMembershipRequired()) {
+            if (!Auth::check() || !Auth::user()->hasActiveMembership()) {
+                return redirect()->route('membership.index')
+                    ->with('error', 'Membership Required! Access to this test requires an active Studyly Membership.');
+            }
         }
 
         // Security: Exclude 'is_correct' column from options payload to prevent client-side inspect element cheating

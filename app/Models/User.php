@@ -56,4 +56,28 @@ class User extends Authenticatable
     {
         return $this->hasMany(DoubtReply::class);
     }
+
+    public function memberships()
+    {
+        return $this->hasMany(Membership::class);
+    }
+
+    public function hasActiveMembership(): bool
+    {
+        return $this->memberships()
+            ->where('status', 'active')
+            ->where('starts_at', '<=', now())
+            ->where('expires_at', '>', now())
+            ->exists();
+    }
+
+    public function activeMembership(): ?Membership
+    {
+        return $this->memberships()
+            ->where('status', 'active')
+            ->where('starts_at', '<=', now())
+            ->where('expires_at', '>', now())
+            ->latest('expires_at')
+            ->first();
+    }
 }

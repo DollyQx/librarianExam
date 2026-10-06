@@ -19,9 +19,15 @@ class StudyMaterial extends Model
         'downloads_count',
         'is_active',
         'is_paid',
+        'access_type',
         'price',
         'sort_order',
     ];
+
+    public function isMembershipRequired(): bool
+    {
+        return $this->access_type === 'membership' || (bool) $this->is_paid;
+    }
 
     protected $casts = [
         'is_active' => 'boolean',
